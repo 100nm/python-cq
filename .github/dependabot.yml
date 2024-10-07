@@ -1,0 +1,20 @@
+version: 2
+
+updates:
+- package-ecosystem: "pip"
+  directory: "/"
+  target-branch: "dev"
+  schedule:
+    interval: "weekly"
+  groups:
+    safe:
+      patterns:
+        - "*"
+      update-types:
+        - "minor"
+        - "patch"
+    major:
+      patterns:
+        - "*"
+      update-types:
+        - "major"

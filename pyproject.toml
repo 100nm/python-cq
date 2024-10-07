@@ -1,0 +1,90 @@
+[tool.poetry]
+name = "python-cq"
+version = "0.0.0"
+description = "Lightweight CQRS library."
+license = "MIT"
+authors = ["remimd"]
+readme = "README.md"
+repository = "https://github.com/100nm/python-cq"
+keywords = ["cqrs"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Typing :: Typed",
+]
+packages = [{ include = "cq" }]
+
+[tool.poetry.dependencies]
+python = ">=3.12, <4"
+pydantic = ">=2, <3"
+python-injection = "*"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "*"
+ruff = "*"
+
+[tool.poetry.group.example.dependencies]
+fastapi = "*"
+
+[tool.poetry.group.test.dependencies]
+pytest = "*"
+pytest-asyncio = "*"
+pytest-cov = "*"
+
+[tool.coverage.report]
+exclude_lines = [
+    "pass",
+    "pragma: no cover",
+    "raise NotImplementedError",
+]
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_defs = true
+enable_incomplete_feature = ["NewGenericSyntax"]
+follow_imports = "silent"
+no_implicit_reexport = true
+plugins = ["pydantic.mypy"]
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pytest.ini_options]
+python_files = "test_*.py"
+addopts = "--tb short --cov ./ --cov-report term-missing:skip-covered"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_mode = "auto"
+testpaths = "**/tests/"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+indent-width = 4
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint]
+extend-select = ["F", "I", "N"]
+fixable = ["ALL"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

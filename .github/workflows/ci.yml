@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - dev
+      - prod
+  pull_request:
+
+jobs:
+  ci:
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run checkout
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        uses: ./.github/actions/environment
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Check code style
+        uses: ./.github/actions/code-style
+
+      - name: Tests
+        uses: ./.github/actions/tests
