@@ -1,0 +1,26 @@
+name: Environment
+description: Set up the environment
+inputs:
+  python-version:
+    description: "Python version."
+    required: false
+    default: "3.12"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        architecture: "x64"
+
+    - name: Install Poetry & Dependencies
+      shell: bash
+      run: |
+        pip install --upgrade pip
+        pip install poetry
+        poetry config installer.modern-installation true
+        poetry config virtualenvs.create false
+        poetry check
+        poetry install --compile

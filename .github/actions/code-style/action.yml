@@ -1,0 +1,15 @@
+name: Code Style
+description: Check code style
+
+runs:
+  using: "composite"
+  steps:
+    - name: Ruff
+      shell: bash
+      run: |
+        ruff format --check
+        ruff check
+
+    - name: MyPy
+      shell: bash
+      run: mypy ./
