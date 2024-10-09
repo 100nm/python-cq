@@ -19,7 +19,7 @@ class MiddlewareGroup[**P, T]:
         return iter(self.__middlewares)
 
     def add(self, *middlewares: Middleware[P, T]) -> Self:
-        self.__middlewares.extend(middlewares)
+        self.__middlewares.extend(reversed(middlewares))
         return self
 
     async def invoke(
@@ -44,12 +44,13 @@ class MiddlewareGroup[**P, T]:
             try:
                 await anext(generator)
 
-                try:
-                    value = await handler(*args, **kwargs)
-                except BaseException as exc:
-                    await generator.athrow(exc)
-                else:
-                    await generator.asend(value)
+                while True:
+                    try:
+                        value = await handler(*args, **kwargs)
+                    except BaseException as exc:
+                        await generator.athrow(exc)
+                    else:
+                        await generator.asend(value)
 
             except StopAsyncIteration:
                 ...
