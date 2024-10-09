@@ -65,6 +65,20 @@ class TestMiddlewareGroup:
         assert isinstance(record.result, ValueError)
         assert record.status == _Status.FAILED
 
+    async def test_invoke_with_multiple_yield_return_any(
+        self,
+        group: MiddlewareGroup[..., Any],
+        history: _HistoryMiddleware,
+    ) -> None:
+        async def handler() -> str:
+            return "I'm a handler..."
+
+        group.add(_exec_2_times_middleware, history)
+        await group.invoke(handler)
+
+        records = history.records
+        assert len(records) == 2
+
 
 class _Status(IntEnum):
     SUCCESS = 1
@@ -95,3 +109,8 @@ class _HistoryMiddleware:
             record = _Record(args, kwargs, result, _Status.SUCCESS)
 
         self.__records.append(record)
+
+
+async def _exec_2_times_middleware(*args: Any, **kwargs: Any) -> MiddlewareResult[Any]:
+    yield
+    yield
