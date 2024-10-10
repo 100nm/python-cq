@@ -9,10 +9,6 @@ from cq._core.bus import SimpleBus, SubscriberDecorator, TaskBus
 
 
 class TestSimpleBus:
-    @pytest.fixture(scope="function")
-    def bus(self) -> SimpleBus[Any, Any]:
-        return SimpleBus()
-
     def test_add_middlewares_with_success_return_self(
         self,
         bus: SimpleBus[Any, Any],
@@ -93,26 +89,29 @@ class TestSimpleBus:
 
 class TestTaskBus:
     @pytest.fixture(scope="function")
-    def bus(self) -> TaskBus[Any]:
+    def task_bus(self) -> TaskBus[Any]:
         return TaskBus()
 
-    def test_subscribe_with_success_return_self(self, bus: TaskBus[Any]) -> None:
-        assert bus.subscribe(str, _SomeTaskHandler) is bus
+    def test_subscribe_with_success_return_self(self, task_bus: TaskBus[Any]) -> None:
+        assert task_bus.subscribe(str, _SomeTaskHandler) is task_bus
         # Checks whether several handlers can be subscribed for the same input type
-        assert bus.subscribe(str, _SomeTaskHandler) is bus
+        assert task_bus.subscribe(str, _SomeTaskHandler) is task_bus
 
-    async def test_dispatch_with_success_return_none(self, bus: TaskBus[Any]) -> None:
-        bus.subscribe(str, _SomeTaskHandler)
+    async def test_dispatch_with_success_return_none(
+        self,
+        task_bus: TaskBus[Any],
+    ) -> None:
+        task_bus.subscribe(str, _SomeTaskHandler)
 
         with pytest.raises(NotImplementedError):
-            await bus.dispatch("hello")
+            await task_bus.dispatch("hello")
 
     async def test_dispatch_with_unknown_input_type_return_none(
         self,
-        bus: TaskBus[Any],
+        task_bus: TaskBus[Any],
     ) -> None:
         # Do nothing
-        await bus.dispatch("hello")
+        await task_bus.dispatch("hello")
 
 
 class _SomeHandler:
