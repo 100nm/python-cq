@@ -39,7 +39,8 @@ class Bus[I, O](Protocol):
             *(
                 self.dispatch(input_value)
                 for input_value in (first_input_value, *input_values)
-            )
+            ),
+            return_exceptions=True,
         )
 
     @abstractmethod
