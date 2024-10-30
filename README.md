@@ -21,4 +21,5 @@ pip install python-cq
 ## Resources
 
 * [**Writing Application Layer**](https://github.com/100nm/python-cq/tree/prod/documentation/writing-application-layer.md)
+* [**Pipeline**](https://github.com/100nm/python-cq/tree/prod/documentation/pipeline.md)
 * [**FastAPI Example**](https://github.com/100nm/python-cq/tree/prod/documentation/fastapi-example.md)

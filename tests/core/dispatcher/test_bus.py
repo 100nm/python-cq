@@ -5,7 +5,7 @@ import pytest
 from injection import Module as InjectionModule
 
 from cq import MiddlewareResult
-from cq._core.bus import SimpleBus, SubscriberDecorator, TaskBus
+from cq._core.dispatcher.bus import SimpleBus, SubscriberDecorator, TaskBus
 
 
 class TestSimpleBus:
@@ -44,7 +44,7 @@ class TestSimpleBus:
     ) -> None:
         assert await bus.dispatch("hello") is NotImplemented
 
-    async def test_dispatch_no_wait_with_success_return_future(
+    async def test_dispatch_no_wait_with_success_return_none(
         self,
         bus: SimpleBus[Any, Any],
     ) -> None:

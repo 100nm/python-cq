@@ -6,13 +6,9 @@ type MiddlewareResult[T] = AsyncGenerator[None, T]
 type Middleware[**P, T] = Callable[P, MiddlewareResult[T]]
 
 
-@dataclass(eq=False, frozen=True, slots=True)
+@dataclass(repr=False, eq=False, frozen=True, slots=True)
 class MiddlewareGroup[**P, T]:
-    __middlewares: list[Middleware[P, T]] = field(
-        default_factory=list,
-        init=False,
-        repr=False,
-    )
+    __middlewares: list[Middleware[P, T]] = field(default_factory=list, init=False)
 
     @property
     def __stack(self) -> Iterator[Middleware[P, T]]:
@@ -51,6 +47,7 @@ class MiddlewareGroup[**P, T]:
                         await generator.athrow(exc)
                     else:
                         await generator.asend(value)
+                        break
 
             except StopAsyncIteration:
                 ...

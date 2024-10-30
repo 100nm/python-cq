@@ -1,5 +1,5 @@
 import asyncio
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -9,7 +9,7 @@ from typing import Protocol, Self, TypeAliasType, runtime_checkable
 
 import injection
 
-from cq._core.middleware import Middleware, MiddlewareGroup
+from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
 
 type HandlerType[**P, T] = type[Handler[P, T]]
 type HandlerFactory[**P, T] = Callable[..., Handler[P, T]]
@@ -27,28 +27,11 @@ class Handler[**P, T](Protocol):
 
 
 @runtime_checkable
-class Bus[I, O](Protocol):
+class Bus[I, O](Dispatcher[I, O], Protocol):
     __slots__ = ()
 
     @abstractmethod
-    async def dispatch(self, input_value: I, /) -> O:
-        raise NotImplementedError
-
-    def dispatch_no_wait(self, first_input_value: I, /, *input_values: I) -> None:
-        asyncio.gather(
-            *(
-                self.dispatch(input_value)
-                for input_value in (first_input_value, *input_values)
-            ),
-            return_exceptions=True,
-        )
-
-    @abstractmethod
     def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
-        raise NotImplementedError
-
-    @abstractmethod
-    def add_middlewares(self, *middlewares: Middleware[[I], O]) -> Self:
         raise NotImplementedError
 
 
@@ -81,23 +64,7 @@ class SubscriberDecorator[I, O]:
         return self.injection_module.find_instance(self.bus_type)
 
 
-class _BaseBus[I, O](Bus[I, O], ABC):
-    __slots__ = ("__middleware_group",)
-
-    __middleware_group: MiddlewareGroup[[I], O]
-
-    def __init__(self) -> None:
-        self.__middleware_group = MiddlewareGroup()
-
-    def add_middlewares(self, *middlewares: Middleware[[I], O]) -> Self:
-        self.__middleware_group.add(*middlewares)
-        return self
-
-    async def _invoke(self, handler: Handler[[I], O], input_value: I, /) -> O:
-        return await self.__middleware_group.invoke(handler.handle, input_value)
-
-
-class SimpleBus[I, O](_BaseBus[I, O]):
+class SimpleBus[I, O](BaseDispatcher[I, O], Bus[I, O]):
     __slots__ = ("__handlers",)
 
     __handlers: dict[type[I], HandlerFactory[[I], O]]
@@ -114,7 +81,10 @@ class SimpleBus[I, O](_BaseBus[I, O]):
         except KeyError:
             return NotImplemented
 
-        return await self._invoke(handler_factory(), input_value)
+        return await self._invoke_with_middlewares(
+            handler_factory().handle,
+            input_value,
+        )
 
     def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
         if input_type in self.__handlers:
@@ -126,7 +96,7 @@ class SimpleBus[I, O](_BaseBus[I, O]):
         return self
 
 
-class TaskBus[I](_BaseBus[I, None]):
+class TaskBus[I](BaseDispatcher[I, None], Bus[I, None]):
     __slots__ = ("__handlers",)
 
     __handlers: dict[type[I], list[HandlerFactory[[I], None]]]
@@ -143,7 +113,10 @@ class TaskBus[I](_BaseBus[I, None]):
 
         await asyncio.gather(
             *(
-                self._invoke(handler_factory(), input_value)
+                self._invoke_with_middlewares(
+                    handler_factory().handle,
+                    input_value,
+                )
                 for handler_factory in handler_factories
             )
         )

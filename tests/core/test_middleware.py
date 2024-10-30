@@ -68,15 +68,19 @@ class TestMiddlewareGroup:
         history: HistoryMiddleware,
     ) -> None:
         async def handler() -> str:
-            return "I'm a handler..."
+            raise ValueError()
 
         group.add(_exec_2_times_middleware, history)
-        await group.invoke(handler)
+
+        with pytest.raises(ValueError):
+            await group.invoke(handler)
 
         records = history.records
         assert len(records) == 2
 
 
 async def _exec_2_times_middleware(*args: Any, **kwargs: Any) -> MiddlewareResult[Any]:
-    yield
-    yield
+    try:
+        yield
+    except ValueError:
+        yield

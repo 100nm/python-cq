@@ -17,13 +17,8 @@ class TestRetryMiddleware:
             async def handle(self, input_value: str) -> str:
                 return input_value
 
-        bus.add_middlewares(
-            RetryMiddleware(3),
-            history,
-        ).subscribe(
-            str,
-            SomeHandler,
-        )
+        bus.add_middlewares(RetryMiddleware(3), history)
+        bus.subscribe(str, SomeHandler)
 
         await bus.dispatch("Hello world!")
         assert len(history.records) == 1
@@ -38,13 +33,8 @@ class TestRetryMiddleware:
                 raise ValueError(input_value)
 
         retry = 3
-        bus.add_middlewares(
-            RetryMiddleware(retry),
-            history,
-        ).subscribe(
-            str,
-            SomeHandler,
-        )
+        bus.add_middlewares(RetryMiddleware(retry), history)
+        bus.subscribe(str, SomeHandler)
 
         with pytest.raises(ValueError):
             await bus.dispatch("Hello world!")
