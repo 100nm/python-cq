@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 
 from cq import Bus
-from cq._core.bus import SimpleBus
+from cq._core.dispatcher.bus import SimpleBus
 from tests.helpers.history import HistoryMiddleware
 
 

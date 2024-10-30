@@ -2,7 +2,7 @@ from abc import ABC
 
 import injection
 
-from cq._core.bus import Bus, SubscriberDecorator, TaskBus
+from cq._core.dispatcher.bus import Bus, SubscriberDecorator, TaskBus
 from cq._core.dto import DTO
 
 

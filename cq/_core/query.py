@@ -3,7 +3,7 @@ from typing import Any
 
 import injection
 
-from cq._core.bus import Bus, SimpleBus, SubscriberDecorator
+from cq._core.dispatcher.bus import Bus, SimpleBus, SubscriberDecorator
 from cq._core.dto import DTO
 
 
