@@ -1,10 +1,9 @@
-from __future__ import annotations
-
 from typing import Any
 
 import pytest
 
 from cq._core.middleware import MiddlewareGroup, MiddlewareResult
+from cq.exceptions import MiddlewareError
 from tests.helpers.history import HistoryMiddleware
 
 
@@ -61,6 +60,24 @@ class TestMiddlewareGroup:
         assert record.kwargs == {}
         assert isinstance(record.result, ValueError)
         assert record.is_failed
+
+    async def test_invoke_with_too_many_yield_raise_middleware_error(
+        self,
+        group: MiddlewareGroup[..., Any],
+    ) -> None:
+        async def handler() -> None: ...
+
+        async def too_many_yield_middleware(
+            *args: Any,
+            **kwargs: Any,
+        ) -> MiddlewareResult[Any]:
+            yield
+            yield
+
+        group.add(too_many_yield_middleware)
+
+        with pytest.raises(MiddlewareError):
+            await group.invoke(handler)
 
     async def test_invoke_with_multiple_yield_return_any(
         self,

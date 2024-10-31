@@ -40,13 +40,8 @@ class SubscriberDecorator[I, O]:
     bus_type: BusType[I, O] | TypeAliasType | GenericAlias
     injection_module: injection.Module = field(default_factory=injection.mod)
 
-    def __call__[T](
-        self,
-        first_input_type: type[I],
-        /,
-        *input_types: type[I],
-    ) -> Callable[[T], T]:
-        def decorator(wrapped: T) -> T:
+    def __call__(self, first_input_type: type[I], /, *input_types: type[I]):  # type: ignore[no-untyped-def]
+        def decorator(wrapped):  # type: ignore[no-untyped-def]
             if not isclass(wrapped) or not issubclass(wrapped, Handler):
                 raise TypeError(f"`{wrapped}` isn't a valid handler.")
 
@@ -56,7 +51,7 @@ class SubscriberDecorator[I, O]:
             for input_type in (first_input_type, *input_types):
                 bus.subscribe(input_type, factory)
 
-            return wrapped  # type: ignore[return-value]
+            return wrapped
 
         return decorator
 

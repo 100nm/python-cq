@@ -3,6 +3,8 @@ from typing import Any
 
 from cq import MiddlewareResult
 
+__all__ = ("RetryMiddleware",)
+
 
 class RetryMiddleware:
     __slots__ = ("__delay", "__exceptions", "__retry")

@@ -32,6 +32,7 @@ class TestPipe:
 
         assert await pipe.dispatch("hello") == "*****"
 
+        # Custom dispatcher
         other_bus: Bus[Any, Any] = SimpleBus()
 
         other_bus.subscribe(str, ToTupleHandler)
@@ -41,3 +42,8 @@ class TestPipe:
             return hidden_string
 
         assert await pipe.dispatch("hello") == ("*", "*", "*", "*", "*")
+
+        # Add static step
+        pipe.add_static_step(2)
+
+        assert await pipe.dispatch("hello") == "**"
