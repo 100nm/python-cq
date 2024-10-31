@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Awaitable
+from typing import Any, Awaitable, Self
 
 from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
 
@@ -37,6 +37,18 @@ class Pipe[I, O](BaseDispatcher[I, O]):
             return wp
 
         return decorator(wrapped) if wrapped else decorator
+
+    def add_static_step[T](
+        self,
+        input_value: T,
+        *,
+        dispatcher: Dispatcher[T, Any] | None = None,
+    ) -> Self:
+        @self.step(dispatcher=dispatcher)
+        async def converter(_: Any) -> T:
+            return input_value
+
+        return self
 
     async def dispatch(self, input_value: I, /) -> O:
         return await self._invoke_with_middlewares(self.__execute, input_value)

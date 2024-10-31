@@ -2,6 +2,8 @@ from collections.abc import AsyncGenerator, Awaitable, Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Self
 
+from cq.exceptions import MiddlewareError
+
 type MiddlewareResult[T] = AsyncGenerator[None, T]
 type Middleware[**P, T] = Callable[P, MiddlewareResult[T]]
 
@@ -47,7 +49,9 @@ class MiddlewareGroup[**P, T]:
                         await generator.athrow(exc)
                     else:
                         await generator.asend(value)
-                        break
+                        raise MiddlewareError(
+                            f"Too many `yield` keywords in `{middleware}`."
+                        )
 
             except StopAsyncIteration:
                 ...
