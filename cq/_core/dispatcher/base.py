@@ -1,7 +1,7 @@
 import asyncio
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable
-from typing import Callable, Protocol, Self, runtime_checkable
+from collections.abc import Awaitable, Callable
+from typing import Protocol, Self, runtime_checkable
 
 from cq._core.middleware import Middleware, MiddlewareGroup
 
