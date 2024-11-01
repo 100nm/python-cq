@@ -1,5 +1,6 @@
+from collections.abc import Mapping
 from enum import IntEnum
-from typing import Any, Mapping, NamedTuple
+from typing import Any, NamedTuple
 
 from cq import MiddlewareResult
 
