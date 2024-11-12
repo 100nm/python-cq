@@ -4,7 +4,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from cq import Command, CommandBus, command_handler, find_command_bus
+from cq import Command, CommandBus, command_handler, get_command_bus
 from fastapi import FastAPI, status
 from injection import injectable
 from injection.integrations.fastapi import Inject
@@ -31,7 +31,7 @@ class ExampleHandler:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    find_command_bus().add_middlewares(...)  # Add middlewares here
+    get_command_bus().add_middlewares(...)  # Add middlewares here
     yield
 
 app = FastAPI(lifespan=lifespan)
