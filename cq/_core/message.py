@@ -39,13 +39,16 @@ injection.set_constant(TaskBus(), EventBus, alias=True)
 injection.set_constant(SimpleBus(), QueryBus, alias=True)
 
 
-def find_command_bus[T]() -> CommandBus[T]:
-    return injection.find_instance(CommandBus)
+@injection.inject
+def get_command_bus[T](bus: CommandBus[T] = NotImplemented, /) -> CommandBus[T]:
+    return bus
 
 
-def find_event_bus() -> EventBus:
-    return injection.find_instance(EventBus)
+@injection.inject
+def get_event_bus(bus: EventBus = NotImplemented, /) -> EventBus:
+    return bus
 
 
-def find_query_bus[T]() -> QueryBus[T]:
-    return injection.find_instance(QueryBus)
+@injection.inject
+def get_query_bus[T](bus: QueryBus[T] = NotImplemented, /) -> QueryBus[T]:
+    return bus

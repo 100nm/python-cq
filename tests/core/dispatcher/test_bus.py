@@ -44,6 +44,20 @@ class TestSimpleBus:
     ) -> None:
         assert await bus.dispatch("hello") is NotImplemented
 
+    async def test_dispatch_with_listeners_return_none(
+        self,
+        bus: SimpleBus[object, Any],
+    ) -> None:
+        called = False
+
+        async def listener(_: Any) -> None:
+            nonlocal called
+            called = True
+
+        bus.add_listeners(listener)
+        assert await bus.dispatch("hello") is NotImplemented
+        assert called
+
     async def test_dispatch_no_wait_with_success_return_none(
         self,
         bus: SimpleBus[Any, Any],

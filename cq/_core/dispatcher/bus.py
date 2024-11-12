@@ -1,11 +1,11 @@
 import asyncio
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from inspect import isclass
 from types import GenericAlias
-from typing import Protocol, Self, TypeAliasType, runtime_checkable
+from typing import Any, Protocol, Self, TypeAliasType, runtime_checkable
 
 import injection
 
@@ -13,6 +13,8 @@ from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
 
 type HandlerType[**P, T] = type[Handler[P, T]]
 type HandlerFactory[**P, T] = Callable[..., Handler[P, T]]
+
+type Listener[T] = Callable[[T], Awaitable[Any]]
 
 type BusType[I, O] = type[Bus[I, O]]
 
@@ -32,6 +34,10 @@ class Bus[I, O](Dispatcher[I, O], Protocol):
 
     @abstractmethod
     def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
+        raise NotImplementedError
+
+    @abstractmethod
+    def add_listeners(self, *listeners: Listener[I]) -> Self:
         raise NotImplementedError
 
 
@@ -59,7 +65,24 @@ class SubscriberDecorator[I, O]:
         return self.injection_module.find_instance(self.bus_type)
 
 
-class SimpleBus[I, O](BaseDispatcher[I, O], Bus[I, O]):
+class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
+    __slots__ = ("__listeners",)
+
+    __listeners: list[Listener[I]]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.__listeners = []
+
+    def add_listeners(self, *listeners: Listener[I]) -> Self:
+        self.__listeners.extend(listeners)
+        return self
+
+    async def _trigger_listeners(self, input_value: I, /) -> None:
+        await asyncio.gather(*(listener(input_value) for listener in self.__listeners))
+
+
+class SimpleBus[I, O](BaseBus[I, O]):
     __slots__ = ("__handlers",)
 
     __handlers: dict[type[I], HandlerFactory[[I], O]]
@@ -69,6 +92,7 @@ class SimpleBus[I, O](BaseDispatcher[I, O], Bus[I, O]):
         self.__handlers = {}
 
     async def dispatch(self, input_value: I, /) -> O:
+        await self._trigger_listeners(input_value)
         input_type = type(input_value)
 
         try:
@@ -91,7 +115,7 @@ class SimpleBus[I, O](BaseDispatcher[I, O], Bus[I, O]):
         return self
 
 
-class TaskBus[I](BaseDispatcher[I, None], Bus[I, None]):
+class TaskBus[I](BaseBus[I, None]):
     __slots__ = ("__handlers",)
 
     __handlers: dict[type[I], list[HandlerFactory[[I], None]]]
@@ -101,6 +125,7 @@ class TaskBus[I](BaseDispatcher[I, None], Bus[I, None]):
         self.__handlers = defaultdict(list)
 
     async def dispatch(self, input_value: I, /) -> None:
+        await self._trigger_listeners(input_value)
         handler_factories = self.__handlers.get(type(input_value))
 
         if not handler_factories:
