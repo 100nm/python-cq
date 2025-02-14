@@ -1,11 +1,30 @@
-[tool.poetry]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "hatch",
+    "mypy",
+    "ruff",
+]
+example = [
+    "fastapi",
+]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+]
+
+[project]
 name = "python-cq"
 version = "0.0.0"
 description = "Lightweight CQRS library."
-license = "MIT"
-authors = ["remimd"]
+license = { text = "MIT" }
 readme = "README.md"
-repository = "https://github.com/100nm/python-cq"
+requires-python = ">=3.12, <4"
+authors = [{ name = "remimd" }]
 keywords = ["cqrs"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -20,24 +39,13 @@ classifiers = [
     "Natural Language :: English",
     "Typing :: Typed",
 ]
-packages = [{ include = "cq" }]
+dependencies = [
+    "pydantic (>=2, <3)",
+    "python-injection",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.12, <4"
-pydantic = ">=2, <3"
-python-injection = "*"
-
-[tool.poetry.group.dev.dependencies]
-mypy = "*"
-ruff = "*"
-
-[tool.poetry.group.example.dependencies]
-fastapi = "*"
-
-[tool.poetry.group.test.dependencies]
-pytest = "*"
-pytest-asyncio = "*"
-pytest-cov = "*"
+[project.urls]
+Repository = "https://github.com/100nm/python-cq"
 
 [tool.coverage.report]
 exclude_lines = [
@@ -45,6 +53,15 @@ exclude_lines = [
     "pragma: no cover",
     "raise NotImplementedError",
 ]
+
+[tool.hatch.build]
+skip-excluded-dirs = true
+
+[tool.hatch.build.targets.sdist]
+include = ["cq"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["cq"]
 
 [tool.mypy]
 check_untyped_defs = true
@@ -70,7 +87,6 @@ asyncio_mode = "auto"
 testpaths = "**/tests/"
 
 [tool.ruff]
-target-version = "py312"
 line-length = 88
 indent-width = 4
 
@@ -84,6 +100,6 @@ line-ending = "auto"
 extend-select = ["F", "I", "N"]
 fixable = ["ALL"]
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+default-groups = ["dev", "test"]
+package = true
