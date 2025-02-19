@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Self
 
 import pytest
 
@@ -17,8 +17,12 @@ class TestRetryMiddleware:
             async def handle(self, input_value: str) -> str:
                 return input_value
 
+            @classmethod
+            async def async_factory(cls) -> Self:
+                return cls()
+
         bus.add_middlewares(RetryMiddleware(3), history)
-        bus.subscribe(str, SomeHandler)
+        bus.subscribe(str, SomeHandler.async_factory)
 
         await bus.dispatch("Hello world!")
         assert len(history.records) == 1
@@ -32,9 +36,13 @@ class TestRetryMiddleware:
             async def handle(self, input_value: str) -> None:
                 raise ValueError(input_value)
 
+            @classmethod
+            async def async_factory(cls) -> Self:
+                return cls()
+
         retry = 3
         bus.add_middlewares(RetryMiddleware(retry), history)
-        bus.subscribe(str, SomeHandler)
+        bus.subscribe(str, SomeHandler.async_factory)
 
         with pytest.raises(ValueError):
             await bus.dispatch("Hello world!")
