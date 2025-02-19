@@ -12,7 +12,7 @@ import injection
 from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
 
 type HandlerType[**P, T] = type[Handler[P, T]]
-type HandlerFactory[**P, T] = Callable[..., Handler[P, T]]
+type HandlerFactory[**P, T] = Callable[..., Awaitable[Handler[P, T]]]
 
 type Listener[T] = Callable[[T], Awaitable[Any]]
 
@@ -46,23 +46,26 @@ class SubscriberDecorator[I, O]:
     bus_type: BusType[I, O] | TypeAliasType | GenericAlias
     injection_module: injection.Module = field(default_factory=injection.mod)
 
-    def __call__(self, first_input_type: type[I], /, *input_types: type[I]):  # type: ignore[no-untyped-def]
-        def decorator(wrapped):  # type: ignore[no-untyped-def]
+    def __call__(self, first_input_type: type[I], /, *input_types: type[I]) -> Any:
+        def decorator(wrapped: type[Handler[[I], O]]) -> type[Handler[[I], O]]:
             if not isclass(wrapped) or not issubclass(wrapped, Handler):
                 raise TypeError(f"`{wrapped}` isn't a valid handler.")
 
-            bus = self.__find_bus()
-            factory = self.injection_module.make_injected_function(wrapped)
+            bus = self.injection_module.find_instance(self.bus_type)
+            lazy_instance = self.injection_module.aget_lazy_instance(
+                wrapped,
+                default=NotImplemented,
+            )
+
+            async def getter() -> Handler[[I], O]:
+                return await lazy_instance
 
             for input_type in (first_input_type, *input_types):
-                bus.subscribe(input_type, factory)
+                bus.subscribe(input_type, getter)
 
-            return wrapped
+            return self.injection_module.injectable(wrapped)
 
         return decorator
-
-    def __find_bus(self) -> Bus[I, O]:
-        return self.injection_module.find_instance(self.bus_type)
 
 
 class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
@@ -100,10 +103,8 @@ class SimpleBus[I, O](BaseBus[I, O]):
         except KeyError:
             return NotImplemented
 
-        return await self._invoke_with_middlewares(
-            handler_factory().handle,
-            input_value,
-        )
+        handler = await handler_factory()
+        return await self._invoke_with_middlewares(handler.handle, input_value)
 
     def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
         if input_type in self.__handlers:
@@ -132,13 +133,13 @@ class TaskBus[I](BaseBus[I, None]):
             return
 
         await asyncio.gather(
-            *(
+            *[
                 self._invoke_with_middlewares(
-                    handler_factory().handle,
+                    (await handler_factory()).handle,
                     input_value,
                 )
                 for handler_factory in handler_factories
-            )
+            ]
         )
 
     def subscribe(
