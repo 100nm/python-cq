@@ -1,5 +1,7 @@
-import asyncio
+from collections.abc import Iterable
 from typing import Any
+
+import anyio
 
 from cq import MiddlewareResult
 
@@ -13,10 +15,10 @@ class RetryMiddleware:
         self,
         retry: int,
         delay: float = 0,
-        exceptions: tuple[type[BaseException], ...] = (Exception,),
+        exceptions: Iterable[type[BaseException]] = (Exception,),
     ) -> None:
         self.__delay = delay
-        self.__exceptions = exceptions
+        self.__exceptions = tuple(exceptions)
         self.__retry = retry
 
     async def __call__(self, *args: Any, **kwargs: Any) -> MiddlewareResult[Any]:
@@ -33,4 +35,4 @@ class RetryMiddleware:
             else:
                 break
 
-            await asyncio.sleep(self.__delay)
+            await anyio.sleep(self.__delay)
