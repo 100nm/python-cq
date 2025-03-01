@@ -1,4 +1,3 @@
-from asyncio import all_tasks, get_running_loop
 from typing import Any, Self
 
 import pytest
@@ -58,15 +57,6 @@ class TestSimpleBus:
         assert await bus.dispatch("hello") is NotImplemented
         assert called
 
-    async def test_dispatch_no_wait_with_success_return_none(
-        self,
-        bus: SimpleBus[Any, Any],
-    ) -> None:
-        loop = get_running_loop()
-        length = len(all_tasks(loop))
-        bus.dispatch_no_wait("hello")
-        assert len(all_tasks(loop)) == length + 1
-
     async def test_subscriber_decorator_with_success(
         self,
         bus: SimpleBus[object, Any],
@@ -117,7 +107,7 @@ class TestTaskBus:
     ) -> None:
         task_bus.subscribe(str, _SomeTaskHandler.async_factory)
 
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(ExceptionGroup):
             await task_bus.dispatch("hello")
 
     async def test_dispatch_with_unknown_input_type_return_none(

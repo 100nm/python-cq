@@ -24,14 +24,14 @@ class Pipe[I, O](BaseDispatcher[I, O]):
         self.__dispatcher = dispatcher
         self.__steps = []
 
-    def step[T](  # type: ignore[no-untyped-def]
+    def step[T](
         self,
         wrapped: PipeConverter[T, Any] | None = None,
         /,
         *,
         dispatcher: Dispatcher[T, Any] | None = None,
-    ):
-        def decorator(wp):  # type: ignore[no-untyped-def]
+    ) -> Any:
+        def decorator(wp: PipeConverter[T, Any]) -> PipeConverter[T, Any]:
             step = PipeStep(wp, dispatcher)
             self.__steps.append(step)
             return wp

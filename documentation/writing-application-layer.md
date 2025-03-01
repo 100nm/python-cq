@@ -130,25 +130,24 @@ class SendConfirmationEmailHandler:
 
 ### Propagate an event
 
-To propagate an event, it must be transmitted to the `EventBus`.
-To retrieve a bus instance, use [python-injection](https://github.com/100nm/python-injection).
+To propagate an event, it must be transmitted to `RelatedEvents` instance.
 
 ```python
-from cq import Command, EventBus, command_handler
+from cq import Command, RelatedEvents, command_handler
 
 class UserRegistrationCommand(Command):
     """ Data required to register a user """
 
 @command_handler(UserRegistrationCommand)
 class UserRegistrationHandler:
-    def __init__(self, event_bus: EventBus) -> None:
-        self.event_bus = event_bus
+    def __init__(self, related_events: RelatedEvents) -> None:
+        self.related_events = related_events
 
     async def handle(self, command: UserRegistrationCommand) -> None:
         # User registration logic
         # ...
         event = UserRegistered(...)
-        self.event_bus.dispatch_no_wait(event)
+        self.related_events.add(event)
 ```
 
 ## Bus Middleware

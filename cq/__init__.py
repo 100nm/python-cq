@@ -18,10 +18,13 @@ from ._core.message import (
     query_handler,
 )
 from ._core.middleware import Middleware, MiddlewareResult
+from ._core.related_events import RelatedEvents
+from ._core.scope import CQScope
 
 __all__ = (
     "AnyCommandBus",
     "Bus",
+    "CQScope",
     "Command",
     "CommandBus",
     "DTO",
@@ -33,6 +36,7 @@ __all__ = (
     "Pipe",
     "Query",
     "QueryBus",
+    "RelatedEvents",
     "command_handler",
     "event_handler",
     "get_command_bus",

@@ -1,4 +1,3 @@
-import asyncio
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from typing import Protocol, Self, runtime_checkable
@@ -15,10 +14,6 @@ class Dispatcher[I, O](Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def dispatch_no_wait(self, *input_values: I) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
     def add_middlewares(self, *middlewares: Middleware[[I], O]) -> Self:
         raise NotImplementedError
 
@@ -30,12 +25,6 @@ class BaseDispatcher[I, O](Dispatcher[I, O], ABC):
 
     def __init__(self) -> None:
         self.__middleware_group = MiddlewareGroup()
-
-    def dispatch_no_wait(self, *input_values: I) -> None:
-        asyncio.gather(
-            *(self.dispatch(input_value) for input_value in input_values),
-            return_exceptions=True,
-        )
 
     def add_middlewares(self, *middlewares: Middleware[[I], O]) -> Self:
         self.__middleware_group.add(*middlewares)
