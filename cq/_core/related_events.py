@@ -27,8 +27,8 @@ class _RelatedEvents(RelatedEvents):
         self.items.extend(events)
 
 
-@injection.scoped(CQScope.ON_COMMAND)
-async def _related_events_recipe(event_bus: EventBus) -> AsyncIterator[RelatedEvents]:
+@injection.scoped(CQScope.ON_COMMAND, mode="fallback")
+async def related_events_recipe(event_bus: EventBus) -> AsyncIterator[RelatedEvents]:
     yield (instance := _RelatedEvents())
     events = instance.items
 
@@ -38,6 +38,3 @@ async def _related_events_recipe(event_bus: EventBus) -> AsyncIterator[RelatedEv
     async with anyio.create_task_group() as task_group:
         for event in events:
             task_group.start_soon(event_bus.dispatch, event)
-
-
-del _related_events_recipe
