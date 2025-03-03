@@ -19,7 +19,7 @@ class RelatedEvents(Protocol):
         raise NotImplementedError
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(repr=False, eq=False, frozen=True, slots=True)
 class _RelatedEvents(RelatedEvents):
     items: list[Event] = field(default_factory=list)
 

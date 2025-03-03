@@ -1,5 +1,7 @@
 # Pipeline
 
+Pipelines are designed to execute several commands one after the other, while encapsulating them in middleware.
+
 Example:
 
 ```python

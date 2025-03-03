@@ -11,6 +11,10 @@ __all__ = ("RetryMiddleware",)
 class RetryMiddleware:
     __slots__ = ("__delay", "__exceptions", "__retry")
 
+    __delay: float
+    __exceptions: tuple[type[BaseException], ...]
+    __retry: int
+
     def __init__(
         self,
         retry: int,

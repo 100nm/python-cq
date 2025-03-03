@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterator
 from typing import Any, Protocol, Self, runtime_checkable
 
 import anyio
@@ -30,17 +30,29 @@ class Bus[I, O](Dispatcher[I, O], Protocol):
 
 
 class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
-    __slots__ = ("__listeners",)
+    __slots__ = ("__listeners", "__manager")
 
     __listeners: list[Listener[I]]
+    __manager: HandlerManager[I, O]
 
-    def __init__(self) -> None:
+    def __init__(self, manager: HandlerManager[I, O]) -> None:
         super().__init__()
         self.__listeners = []
+        self.__manager = manager
 
     def add_listeners(self, *listeners: Listener[I]) -> Self:
         self.__listeners.extend(listeners)
         return self
+
+    def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
+        self.__manager.subscribe(input_type, factory)
+        return self
+
+    def _handlers_from(
+        self,
+        input_type: type[I],
+    ) -> Iterator[Callable[[I], Awaitable[O]]]:
+        return self.__manager.handlers_from(input_type)
 
     def _trigger_listeners(self, input_value: I, /, task_group: TaskGroup) -> None:
         for listener in self.__listeners:
@@ -48,51 +60,34 @@ class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
 
 
 class SimpleBus[I, O](BaseBus[I, O]):
-    __slots__ = ("__manager",)
-
-    __manager: HandlerManager[I, O]
+    __slots__ = ()
 
     def __init__(self, manager: HandlerManager[I, O] | None = None) -> None:
-        super().__init__()
-        self.__manager = manager or SingleHandlerManager()
+        super().__init__(manager or SingleHandlerManager())
 
     async def dispatch(self, input_value: I, /) -> O:
         async with anyio.create_task_group() as task_group:
             self._trigger_listeners(input_value, task_group)
 
-        for handler in self.__manager.handlers_from(type(input_value)):
+        for handler in self._handlers_from(type(input_value)):
             return await self._invoke_with_middlewares(handler, input_value)
 
         return NotImplemented
 
-    def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
-        self.__manager.subscribe(input_type, factory)
-        return self
-
 
 class TaskBus[I](BaseBus[I, None]):
-    __slots__ = ("__manager",)
-
-    __manager: HandlerManager[I, None]
+    __slots__ = ()
 
     def __init__(self, manager: HandlerManager[I, None] | None = None) -> None:
-        super().__init__()
-        self.__manager = manager or MultipleHandlerManager()
+        super().__init__(manager or MultipleHandlerManager())
 
     async def dispatch(self, input_value: I, /) -> None:
         async with anyio.create_task_group() as task_group:
             self._trigger_listeners(input_value, task_group)
-            for handler in self.__manager.handlers_from(type(input_value)):
+
+            for handler in self._handlers_from(type(input_value)):
                 task_group.start_soon(
                     self._invoke_with_middlewares,
                     handler,
                     input_value,
                 )
-
-    def subscribe(
-        self,
-        input_type: type[I],
-        factory: HandlerFactory[[I], None],
-    ) -> Self:
-        self.__manager.subscribe(input_type, factory)
-        return self
