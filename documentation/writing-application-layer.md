@@ -189,7 +189,7 @@ class SomeMiddleware:
 
 ### Add middleware
 
-To add a middleware: you need to override the bus recipe.
+To add a middleware, you need to override the bus recipe.
 
 ```python
 from cq import CommandBus, new_command_bus

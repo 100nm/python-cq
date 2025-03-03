@@ -13,6 +13,8 @@ __all__ = ("InjectionScopeMiddleware",)
 class InjectionScopeMiddleware:
     __slots__ = ("__scope_name",)
 
+    __scope_name: str
+
     def __init__(self, scope_name: str) -> None:
         self.__scope_name = scope_name
 

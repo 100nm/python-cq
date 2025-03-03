@@ -1,7 +1,11 @@
 # [FastAPI](https://github.com/fastapi/fastapi) Example
 
+The advantage of `python-cq` is that it can be easily integrated into FastAPI.
+
+Here's an example of its integration:
+
 ```python
-from cq import Command, CommandBus, command_handler, new_command_bus
+from cq import Command, CommandBus, DTO, command_handler, new_command_bus
 from fastapi import FastAPI, status
 from injection import injectable, singleton
 from injection.integrations.fastapi import Inject
@@ -21,7 +25,7 @@ def override_command_bus_recipe() -> CommandBus:
 
 class ExampleCommand(Command): ...
 
-type HandlerReturnType = ...
+class HandlerReturnType(DTO): ...
 
 @command_handler(ExampleCommand)
 class ExampleHandler:

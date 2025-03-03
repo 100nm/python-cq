@@ -37,7 +37,7 @@ class HandlerManager[I, O](Protocol):
         raise NotImplementedError
 
 
-@dataclass(eq=False, frozen=True, slots=True)
+@dataclass(repr=False, eq=False, frozen=True, slots=True)
 class MultipleHandlerManager[I, O](HandlerManager[I, O]):
     __factories: dict[type[I], list[HandlerFactory[[I], O]]] = field(
         default_factory=partial(defaultdict, list),
@@ -57,7 +57,7 @@ class MultipleHandlerManager[I, O](HandlerManager[I, O]):
         return self
 
 
-@dataclass(eq=False, frozen=True, slots=True)
+@dataclass(repr=False, eq=False, frozen=True, slots=True)
 class SingleHandlerManager[I, O](HandlerManager[I, O]):
     __factories: dict[type[I], HandlerFactory[[I], O]] = field(
         default_factory=dict,
@@ -83,7 +83,7 @@ class SingleHandlerManager[I, O](HandlerManager[I, O]):
         return self
 
 
-@dataclass(eq=False, frozen=True, slots=True)
+@dataclass(repr=False, eq=False, frozen=True, slots=True)
 class HandlerDecorator[I, O]:
     manager: HandlerManager[I, O]
     injection_module: injection.Module = field(default_factory=injection.mod)
@@ -101,9 +101,9 @@ class HandlerDecorator[I, O]:
 
 
 def _make_handle_function[I, O](
-    handler_factory: HandlerFactory[[I], O],
+    factory: HandlerFactory[[I], O],
 ) -> Callable[[I], Awaitable[O]]:
-    return partial(__handle, factory=handler_factory)
+    return partial(__handle, factory=factory)
 
 
 async def __handle[I, O](input_value: I, factory: HandlerFactory[[I], O]) -> O:
