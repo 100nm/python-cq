@@ -102,5 +102,5 @@ extend-select = ["F", "I", "N"]
 fixable = ["ALL"]
 
 [tool.uv]
-default-groups = ["dev", "test"]
+default-groups = ["dev", "example", "test"]
 package = true
