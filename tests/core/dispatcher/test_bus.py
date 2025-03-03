@@ -1,10 +1,9 @@
 from typing import Any, Self
 
 import pytest
-from injection import Module as InjectionModule
 
 from cq import MiddlewareResult
-from cq._core.dispatcher.bus import SimpleBus, SubscriberDecorator, TaskBus
+from cq._core.dispatcher.bus import SimpleBus, TaskBus
 
 
 class TestSimpleBus:
@@ -56,39 +55,6 @@ class TestSimpleBus:
         bus.add_listeners(listener)
         assert await bus.dispatch("hello") is NotImplemented
         assert called
-
-    async def test_subscriber_decorator_with_success(
-        self,
-        bus: SimpleBus[object, Any],
-    ) -> None:
-        module = InjectionModule().set_constant(bus)
-        subscriber = SubscriberDecorator(SimpleBus[object, Any], module)
-
-        @module.injectable
-        class Dependency: ...
-
-        @subscriber(str)
-        class Handler:
-            def __init__(self, dependency: Dependency) -> None:
-                assert isinstance(dependency, Dependency)
-
-            async def handle(self, input_value: str, /) -> str:
-                return input_value
-
-        value = "hello"
-        assert await bus.dispatch(value) is value
-
-    async def test_subscriber_decorator_with_bad_handler_raise_type_error(
-        self,
-        bus: SimpleBus[object, Any],
-    ) -> None:
-        module = InjectionModule().set_constant(bus)
-        subscriber = SubscriberDecorator(SimpleBus[object, Any], module)
-
-        with pytest.raises(TypeError):
-
-            @subscriber(str)
-            class BadHandler: ...
 
 
 class TestTaskBus:

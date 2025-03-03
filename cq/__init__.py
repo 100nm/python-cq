@@ -12,9 +12,9 @@ from ._core.message import (
     QueryBus,
     command_handler,
     event_handler,
-    get_command_bus,
-    get_event_bus,
-    get_query_bus,
+    new_command_bus,
+    new_event_bus,
+    new_query_bus,
     query_handler,
 )
 from ._core.middleware import Middleware, MiddlewareResult
@@ -39,8 +39,8 @@ __all__ = (
     "RelatedEvents",
     "command_handler",
     "event_handler",
-    "get_command_bus",
-    "get_event_bus",
-    "get_query_bus",
+    "new_command_bus",
+    "new_event_bus",
+    "new_query_bus",
     "query_handler",
 )

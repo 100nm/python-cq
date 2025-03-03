@@ -189,17 +189,15 @@ class SomeMiddleware:
 
 ### Add middleware
 
-To add a middleware :
-
-1. Retrieve a bus instance of your choice.
-2. Use the `add_middlewares` method.
+To add a middleware: you need to override the bus recipe.
 
 ```python
-from cq import CommandBus
-from typing import Any
-from injection import inject
+from cq import CommandBus, new_command_bus
+from injection import singleton
 
-@inject
-def setup_command_bus(command_bus: CommandBus[Any]) -> None:
-    command_bus.add_middlewares(log_middleware, transaction_middleware)
+@singleton
+def override_command_bus_recipe() -> CommandBus:
+    bus = new_command_bus()
+    bus.add_middlewares(log_middleware, transaction_middleware)
+    return bus
 ```

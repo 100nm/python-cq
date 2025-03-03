@@ -3,8 +3,13 @@ from typing import Any
 
 import injection
 
-from cq._core.dispatcher.bus import Bus, SimpleBus, SubscriberDecorator, TaskBus
+from cq._core.dispatcher.bus import Bus, SimpleBus, TaskBus
 from cq._core.dto import DTO
+from cq._core.handler import (
+    HandlerDecorator,
+    MultipleHandlerManager,
+    SingleHandlerManager,
+)
 from cq._core.scope import CQScope
 from cq.middlewares.scope import InjectionScopeMiddleware
 
@@ -32,42 +37,42 @@ type QueryBus[T] = Bus[Query, T]
 AnyCommandBus = CommandBus[Any]
 
 
-command_handler: SubscriberDecorator[Command, Any] = SubscriberDecorator(CommandBus)
-event_handler: SubscriberDecorator[Event, None] = SubscriberDecorator(EventBus)
-query_handler: SubscriberDecorator[Query, Any] = SubscriberDecorator(QueryBus)
+command_handler: HandlerDecorator[Command, Any] = HandlerDecorator(
+    SingleHandlerManager(),
+)
+event_handler: HandlerDecorator[Event, None] = HandlerDecorator(
+    MultipleHandlerManager(),
+)
+query_handler: HandlerDecorator[Query, Any] = HandlerDecorator(
+    SingleHandlerManager(),
+)
 
 
-@injection.inject
-def get_command_bus[T](bus: CommandBus[T] = NotImplemented, /) -> CommandBus[T]:
-    return bus
-
-
+@injection.singleton(
+    on=CommandBus,
+    ignore_type_hint=True,  # type: ignore[call-arg]
+    inject=False,
+    mode="fallback",
+)
 def new_command_bus[T]() -> CommandBus[T]:
-    bus: CommandBus[T] = SimpleBus()
-    bus.add_middlewares(
+    return SimpleBus(command_handler.manager).add_middlewares(
         InjectionScopeMiddleware(CQScope.ON_COMMAND),
     )
-    return bus
 
 
-@injection.inject
-def get_event_bus(bus: EventBus = NotImplemented, /) -> EventBus:
-    return bus
-
-
+@injection.singleton(
+    inject=False,
+    mode="fallback",
+)
 def new_event_bus() -> EventBus:
-    return TaskBus()
+    return TaskBus(event_handler.manager)
 
 
-@injection.inject
-def get_query_bus[T](bus: QueryBus[T] = NotImplemented, /) -> QueryBus[T]:
-    return bus
-
-
+@injection.singleton(
+    on=QueryBus,
+    ignore_type_hint=True,  # type: ignore[call-arg]
+    inject=False,
+    mode="fallback",
+)
 def new_query_bus[T]() -> QueryBus[T]:
-    return SimpleBus()
-
-
-injection.set_constant(new_command_bus(), CommandBus, alias=True)
-injection.set_constant(new_event_bus(), EventBus, alias=True)
-injection.set_constant(new_query_bus(), QueryBus, alias=True)
+    return SimpleBus(query_handler.manager)
