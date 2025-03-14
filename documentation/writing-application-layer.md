@@ -156,8 +156,7 @@ class UserRegistrationHandler:
 
 Acts as classic middleware. It is used around the call of a handler.
 
-> **Note**
-> 
+> [!NOTE]
 > * It isn't possible to replace the result returned by the handler.
 > * If an exception is caught but no other exception is raised, `Bus.dispatch` will return `NotImplemented`.
 
