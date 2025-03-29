@@ -2,42 +2,29 @@
 
 Set of tools to simplify application logic writing.
 
-* [Data Transfer Object (DTO)](#data-transfer-object-dto)
 * [Reading](#reading)
 * [Writing](#writing)
 * [Side effects](#side-effects)
 * [Bus Middleware](#bus-middleware)
-
-## Data Transfer Object (DTO)
-
-The idea is to have one DTO to enter the application layer and another to exit when needed.
-A DTO is a subclass of [Pydantic BaseModel](https://docs.pydantic.dev/latest/), so it contains all these properties.
-
-```python
-from cq import DTO
-
-class MyAwesomeDTO(DTO):
-    my_awesome_value: str
-```
 
 ## Reading
 
 ### Define a query
 
 The purpose of a query is to read data.
-The `Query` class is a subclass of DTO.
 
 The `query_handler` decorator associates a query type with a particular logic (handler).
 Only one handler can be associated with a query type.
 All handler dependencies are injected at runtime using [python-injection](https://github.com/100nm/python-injection).
 
 ```python
-from cq import DTO, Query, query_handler
+import msgspec
+from cq import query_handler
 
-class UserProfileView(DTO):
+class UserProfileView:
     """ Data to retrieve """
 
-class ReadUserProfileQuery(Query):
+class ReadUserProfileQuery(msgspec.Struct, frozen=True):
     user_id: int
 
 @query_handler(ReadUserProfileQuery)
@@ -69,16 +56,15 @@ async def get_user_profile_1(query_bus: QueryBus[UserProfileView]) -> UserProfil
 ### Define a command
 
 The purpose of a command is to write data.
-The `Command` class is a subclass of DTO.
 
 The `command_handler` decorator associates a command type with a particular logic (handler).
 Only one handler can be associated with a command type.
 All handler dependencies are injected at runtime using [python-injection](https://github.com/100nm/python-injection).
 
 ```python
-from cq import Command, command_handler
+from cq import command_handler
 
-class UpdateUserProfileCommand(Command):
+class UpdateUserProfileCommand:
     """ Data required to update user profile """
 
 @command_handler(UpdateUserProfileCommand)
@@ -110,16 +96,15 @@ async def update_user_profile(command_bus: CommandBus[None]) -> None:
 
 The purpose of an event is to execute side effects.
 An event is generally propagated at the end of a command.
-The `Event` class is a subclass of DTO.
 
 The `event_handler` decorator associates a event type with a particular logic (handler).
 Several handlers can be associated with an event type.
 All handler dependencies are injected at runtime using [python-injection](https://github.com/100nm/python-injection).
 
 ```python
-from cq import Event, event_handler
+from cq import event_handler
 
-class UserRegistered(Event):
+class UserRegistered:
     """ Data to process the event """
 
 @event_handler(UserRegistered)
@@ -133,9 +118,9 @@ class SendConfirmationEmailHandler:
 To propagate an event, it must be transmitted to `RelatedEvents` instance.
 
 ```python
-from cq import Command, RelatedEvents, command_handler
+from cq import RelatedEvents, command_handler
 
-class UserRegistrationCommand(Command):
+class UserRegistrationCommand:
     """ Data required to register a user """
 
 @command_handler(UserRegistrationCommand)

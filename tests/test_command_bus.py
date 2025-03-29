@@ -1,13 +1,6 @@
 from injection import find_instance
 
-from cq import (
-    AnyCommandBus,
-    Command,
-    Event,
-    RelatedEvents,
-    command_handler,
-    event_handler,
-)
+from cq import AnyCommandBus, RelatedEvents, command_handler, event_handler
 from tests.helpers.history import HistoryMiddleware
 
 
@@ -16,13 +9,13 @@ class TestCommandBus:
         self,
         history: HistoryMiddleware,
     ) -> None:
-        class _Event(Event): ...
+        class _Event: ...
 
         @event_handler(_Event)
         class _EventHandler:
             async def handle(self, event: _Event) -> None: ...
 
-        class _Command(Command): ...
+        class _Command: ...
 
         @command_handler(_Command)
         class _CommandHandler:

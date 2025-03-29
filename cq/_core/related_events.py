@@ -20,7 +20,7 @@ class RelatedEvents(Protocol):
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
-class _RelatedEvents(RelatedEvents):
+class SimpleRelatedEvents(RelatedEvents):
     items: list[Event] = field(default_factory=list)
 
     def add(self, *events: Event) -> None:
@@ -29,7 +29,7 @@ class _RelatedEvents(RelatedEvents):
 
 @injection.scoped(CQScope.ON_COMMAND, mode="fallback")
 async def related_events_recipe(event_bus: EventBus) -> AsyncIterator[RelatedEvents]:
-    yield (instance := _RelatedEvents())
+    yield (instance := SimpleRelatedEvents())
     events = instance.items
 
     if not events:
