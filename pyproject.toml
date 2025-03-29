@@ -11,6 +11,7 @@ dev = [
 example = [
     "fastapi",
     "msgspec",
+    "pydantic",
 ]
 test = [
     "pytest",

@@ -5,11 +5,11 @@ The advantage of `python-cq` is that it can be easily integrated into FastAPI.
 Here's an example of its integration:
 
 ```python
-import msgspec
 from cq import CommandBus, command_handler, new_command_bus
 from fastapi import FastAPI, status
 from injection import injectable, singleton
 from injection.integrations.fastapi import Inject
+from pydantic import BaseModel
 
 # ----- Service Definition -----
 
@@ -24,9 +24,9 @@ def override_command_bus_recipe() -> CommandBus:
 
 # ----- Command Definition -----
 
-class ExampleCommand(msgspec.Struct, frozen=True): ...
+class ExampleCommand(BaseModel): ...
 
-class ExampleReturnType(msgspec.Struct, frozen=True): ...
+class ExampleReturnType: ...
 
 @command_handler(ExampleCommand)
 class ExampleHandler:
