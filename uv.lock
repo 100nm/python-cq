@@ -632,6 +632,7 @@ dev = [
 example = [
     { name = "fastapi" },
     { name = "msgspec" },
+    { name = "pydantic" },
 ]
 test = [
     { name = "pytest" },
@@ -654,6 +655,7 @@ dev = [
 example = [
     { name = "fastapi" },
     { name = "msgspec" },
+    { name = "pydantic" },
 ]
 test = [
     { name = "pytest" },
