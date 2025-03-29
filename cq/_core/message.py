@@ -1,10 +1,8 @@
-from abc import ABC
 from typing import Any
 
 import injection
 
 from cq._core.dispatcher.bus import Bus, SimpleBus, TaskBus
-from cq._core.dto import DTO
 from cq._core.handler import (
     HandlerDecorator,
     MultipleHandlerManager,
@@ -13,22 +11,9 @@ from cq._core.handler import (
 from cq._core.scope import CQScope
 from cq.middlewares.scope import InjectionScopeMiddleware
 
-
-class Message(DTO, ABC):
-    __slots__ = ()
-
-
-class Command(Message, ABC):
-    __slots__ = ()
-
-
-class Event(Message, ABC):
-    __slots__ = ()
-
-
-class Query(Message, ABC):
-    __slots__ = ()
-
+Command = object
+Event = object
+Query = object
 
 type CommandBus[T] = Bus[Command, T]
 type EventBus = Bus[Event, None]

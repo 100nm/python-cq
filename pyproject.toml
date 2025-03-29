@@ -10,6 +10,7 @@ dev = [
 ]
 example = [
     "fastapi",
+    "msgspec",
 ]
 test = [
     "pytest",
@@ -41,7 +42,6 @@ classifiers = [
 ]
 dependencies = [
     "anyio",
-    "pydantic (>=2, <3)",
     "python-injection",
 ]
 
@@ -71,14 +71,8 @@ disallow_subclassing_any = true
 disallow_untyped_defs = true
 follow_imports = "silent"
 no_implicit_reexport = true
-plugins = ["pydantic.mypy"]
 warn_redundant_casts = true
 warn_unused_ignores = true
-
-[tool.pydantic-mypy]
-init_forbid_extra = true
-init_typed = true
-warn_required_dynamic_aliases = true
 
 [tool.pytest.ini_options]
 python_files = "test_*.py"
