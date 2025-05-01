@@ -8,7 +8,7 @@ Here's an example of its integration:
 from cq import CommandBus, command_handler, new_command_bus
 from fastapi import FastAPI, status
 from injection import injectable, singleton
-from injection.integrations.fastapi import Inject
+from injection.ext.fastapi import Inject
 from pydantic import BaseModel
 
 # ----- Service Definition -----
