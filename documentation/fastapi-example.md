@@ -44,7 +44,7 @@ app = FastAPI()
 @app.post("/example", status_code=status.HTTP_204_NO_CONTENT)
 async def example(
     command: ExampleCommand,
-    command_bus: CommandBus[ExampleReturnType] = Inject(CommandBus),
+    command_bus: Inject[CommandBus[ExampleReturnType]],
 ) -> None:
     result = await command_bus.dispatch(command)
     # ...
