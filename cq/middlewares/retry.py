@@ -32,9 +32,9 @@ class RetryMiddleware:
             try:
                 yield
 
-            except self.__exceptions as exc:
+            except self.__exceptions:
                 if attempt == retry:
-                    raise exc
+                    raise
 
             else:
                 break

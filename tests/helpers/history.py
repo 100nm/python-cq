@@ -38,7 +38,7 @@ class HistoryMiddleware:
             result = yield
         except BaseException as exc:
             record = HistoryRecord(args, kwargs, exc, HistoryRecordStatus.FAILED)
-            raise exc
+            raise
         else:
             record = HistoryRecord(args, kwargs, result, HistoryRecordStatus.SUCCESS)
         finally:
