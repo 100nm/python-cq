@@ -33,31 +33,18 @@ query_handler: HandlerDecorator[Query, Any] = HandlerDecorator(
 )
 
 
-@injection.singleton(
-    on=CommandBus,
-    ignore_type_hint=True,  # type: ignore[call-arg]
-    inject=False,
-    mode="fallback",
-)
-def new_command_bus[T]() -> CommandBus[T]:
+@injection.singleton(inject=False, mode="fallback")
+def new_command_bus() -> CommandBus:  # type: ignore[type-arg]
     bus = SimpleBus(command_handler.manager)
     bus.add_middlewares(InjectionScopeMiddleware(CQScope.ON_COMMAND))
     return bus
 
 
-@injection.singleton(
-    inject=False,
-    mode="fallback",
-)
+@injection.singleton(inject=False, mode="fallback")
 def new_event_bus() -> EventBus:
     return TaskBus(event_handler.manager)
 
 
-@injection.singleton(
-    on=QueryBus,
-    ignore_type_hint=True,  # type: ignore[call-arg]
-    inject=False,
-    mode="fallback",
-)
-def new_query_bus[T]() -> QueryBus[T]:
+@injection.singleton(inject=False, mode="fallback")
+def new_query_bus() -> QueryBus:  # type: ignore[type-arg]
     return SimpleBus(query_handler.manager)
