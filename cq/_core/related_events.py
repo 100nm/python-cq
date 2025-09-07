@@ -23,18 +23,20 @@ class RelatedEvents(Protocol):
 class SimpleRelatedEvents(RelatedEvents):
     items: list[Event] = field(default_factory=list)
 
+    def __bool__(self) -> bool:
+        return bool(self.items)
+
     def add(self, *events: Event) -> None:
         self.items.extend(events)
 
 
-@injection.scoped(CQScope.ON_COMMAND, mode="fallback")
+@injection.scoped(CQScope.TRANSACTION, mode="fallback")
 async def related_events_recipe(event_bus: EventBus) -> AsyncIterator[RelatedEvents]:
     yield (instance := SimpleRelatedEvents())
-    events = instance.items
 
-    if not events:
+    if not instance:
         return
 
     async with anyio.create_task_group() as task_group:
-        for event in events:
+        for event in instance.items:
             task_group.start_soon(event_bus.dispatch, event)

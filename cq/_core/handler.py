@@ -3,7 +3,8 @@ from collections import defaultdict
 from collections.abc import Awaitable, Callable, Iterator
 from dataclasses import dataclass, field
 from functools import partial
-from inspect import getmro, isclass
+from inspect import Parameter, getmro, isclass
+from inspect import signature as inspect_signature
 from typing import Any, Protocol, Self, runtime_checkable
 
 import injection
@@ -88,16 +89,41 @@ class HandlerDecorator[I, O]:
     manager: HandlerManager[I, O]
     injection_module: injection.Module = field(default_factory=injection.mod)
 
-    def __call__(self, input_type: type[I], /) -> Any:
-        def decorator(wrapped: type[Handler[[I], O]]) -> type[Handler[[I], O]]:
-            if not isclass(wrapped) or not issubclass(wrapped, Handler):
-                raise TypeError(f"`{wrapped}` isn't a valid handler.")
-
+    def __call__(
+        self,
+        input_or_handler: type[I] | HandlerType[[I], O] | None = None,
+        /,
+    ) -> Any:
+        def decorator(
+            wrapped: HandlerType[[I], O],
+            *,
+            input_type: type[I] | None = None,
+        ) -> HandlerType[[I], O]:
             factory = self.injection_module.make_async_factory(wrapped)
+            input_type = input_type or _resolve_input_type(wrapped)
             self.manager.subscribe(input_type, factory)
             return wrapped
 
-        return decorator
+        if input_or_handler is None:
+            return decorator
+
+        elif isclass(input_or_handler) and issubclass(input_or_handler, Handler):
+            return decorator(input_or_handler)
+
+        else:
+            return partial(decorator, input_type=input_or_handler)  # type: ignore[arg-type]
+
+
+def _resolve_input_type[I, O](handler_type: HandlerType[[I], O]) -> type[I]:
+    fake_handle_method = handler_type.handle.__get__(NotImplemented)
+    signature = inspect_signature(fake_handle_method, eval_str=True)
+    parameters = iter(signature.parameters.values())
+    input_type = next(parameters).annotation
+
+    if input_type is Parameter.empty:
+        raise TypeError("Unable to resolve input type.")
+
+    return input_type
 
 
 def _make_handle_function[I, O](
@@ -106,6 +132,6 @@ def _make_handle_function[I, O](
     return partial(__handle, factory=factory)
 
 
-async def __handle[I, O](input_value: I, factory: HandlerFactory[[I], O]) -> O:
+async def __handle[I, O](input_value: I, *, factory: HandlerFactory[[I], O]) -> O:
     handler = await factory()
     return await handler.handle(input_value)

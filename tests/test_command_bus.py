@@ -11,13 +11,13 @@ class TestCommandBus:
     ) -> None:
         class _Event: ...
 
-        @event_handler(_Event)
+        @event_handler
         class _EventHandler:
             async def handle(self, event: _Event) -> None: ...
 
         class _Command: ...
 
-        @command_handler(_Command)
+        @command_handler
         class _CommandHandler:
             def __init__(self, related_events: RelatedEvents) -> None:
                 self.related_events = related_events

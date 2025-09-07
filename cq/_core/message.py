@@ -36,7 +36,11 @@ query_handler: HandlerDecorator[Query, Any] = HandlerDecorator(
 @injection.singleton(inject=False, mode="fallback")
 def new_command_bus() -> CommandBus:  # type: ignore[type-arg]
     bus = SimpleBus(command_handler.manager)
-    bus.add_middlewares(InjectionScopeMiddleware(CQScope.ON_COMMAND))
+    transaction_scope_middleware = InjectionScopeMiddleware(
+        CQScope.TRANSACTION,
+        exist_ok=True,
+    )
+    bus.add_middlewares(transaction_scope_middleware)
     return bus
 
 

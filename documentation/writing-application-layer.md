@@ -27,7 +27,7 @@ class UserProfileView:
 class ReadUserProfileQuery(msgspec.Struct, frozen=True):
     user_id: int
 
-@query_handler(ReadUserProfileQuery)
+@query_handler
 class ReadUserProfileHandler:
     async def handle(self, query: ReadUserProfileQuery) -> UserProfileView:
         """ User profile reading logic """
@@ -67,7 +67,7 @@ from cq import command_handler
 class UpdateUserProfileCommand:
     """ Data required to update user profile """
 
-@command_handler(UpdateUserProfileCommand)
+@command_handler
 class UpdateUserProfileHandler:
     async def handle(self, command: UpdateUserProfileCommand) -> None:
         """ User profile updating logic """
@@ -107,7 +107,7 @@ from cq import event_handler
 class UserRegistered:
     """ Data to process the event """
 
-@event_handler(UserRegistered)
+@event_handler
 class SendConfirmationEmailHandler:
     async def handle(self, event: UserRegistered) -> None:
         """ Confirmation email sending logic """
@@ -123,7 +123,7 @@ from cq import RelatedEvents, command_handler
 class UserRegistrationCommand:
     """ Data required to register a user """
 
-@command_handler(UserRegistrationCommand)
+@command_handler
 class UserRegistrationHandler:
     def __init__(self, related_events: RelatedEvents) -> None:
         self.related_events = related_events
