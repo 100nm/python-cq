@@ -3,7 +3,8 @@ from collections import defaultdict
 from collections.abc import Awaitable, Callable, Iterator
 from dataclasses import dataclass, field
 from functools import partial
-from inspect import getmro, isclass
+from inspect import Parameter, getmro, isclass
+from inspect import signature as inspect_signature
 from typing import Any, Protocol, Self, runtime_checkable
 
 import injection
@@ -88,16 +89,50 @@ class HandlerDecorator[I, O]:
     manager: HandlerManager[I, O]
     injection_module: injection.Module = field(default_factory=injection.mod)
 
-    def __call__(self, input_type: type[I], /) -> Any:
-        def decorator(wrapped: type[Handler[[I], O]]) -> type[Handler[[I], O]]:
-            if not isclass(wrapped) or not issubclass(wrapped, Handler):
-                raise TypeError(f"`{wrapped}` isn't a valid handler.")
+    def __call__(
+        self,
+        input_or_handler_type: type[I] | HandlerType[[I], O] | None = None,
+        /,
+    ) -> Any:
+        if input_or_handler_type is None:
+            return self.__decorator
 
-            factory = self.injection_module.make_async_factory(wrapped)
-            self.manager.subscribe(input_type, factory)
-            return wrapped
+        elif isclass(input_or_handler_type) and issubclass(
+            input_or_handler_type,
+            Handler,
+        ):
+            return self.__decorator(input_or_handler_type)
 
-        return decorator
+        return partial(self.__decorator, input_type=input_or_handler_type)  # type: ignore[arg-type]
+
+    def __decorator(
+        self,
+        wrapped: HandlerType[[I], O],
+        *,
+        input_type: type[I] | None = None,
+    ) -> HandlerType[[I], O]:
+        factory = self.injection_module.make_async_factory(wrapped)
+        input_type = input_type or _resolve_input_type(wrapped)
+        self.manager.subscribe(input_type, factory)
+        return wrapped
+
+
+def _resolve_input_type[I, O](handler_type: HandlerType[[I], O]) -> type[I]:
+    fake_handle_method = handler_type.handle.__get__(NotImplemented)
+    signature = inspect_signature(fake_handle_method, eval_str=True)
+
+    for parameter in signature.parameters.values():
+        input_type = parameter.annotation
+
+        if input_type is Parameter.empty:
+            break
+
+        return input_type
+
+    raise TypeError(
+        f"Unable to resolve input type for handler `{handler_type}`, "
+        "`handle` method must have a type annotation for its first parameter."
+    )
 
 
 def _make_handle_function[I, O](
@@ -106,6 +141,6 @@ def _make_handle_function[I, O](
     return partial(__handle, factory=factory)
 
 
-async def __handle[I, O](input_value: I, factory: HandlerFactory[[I], O]) -> O:
+async def __handle[I, O](input_value: I, *, factory: HandlerFactory[[I], O]) -> O:
     handler = await factory()
     return await handler.handle(input_value)

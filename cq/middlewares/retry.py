@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Sequence
 from typing import Any
 
 import anyio
@@ -19,7 +19,7 @@ class RetryMiddleware:
         self,
         retry: int,
         delay: float = 0,
-        exceptions: Iterable[type[BaseException]] = (Exception,),
+        exceptions: Sequence[type[BaseException]] = (Exception,),
     ) -> None:
         self.__delay = delay
         self.__exceptions = tuple(exceptions)

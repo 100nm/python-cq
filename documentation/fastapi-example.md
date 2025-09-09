@@ -28,7 +28,7 @@ class ExampleCommand(BaseModel): ...
 
 class ExampleReturnType: ...
 
-@command_handler(ExampleCommand)
+@command_handler
 class ExampleHandler:
     def __init__(self, service: ExampleService) -> None:
         self.service = service
