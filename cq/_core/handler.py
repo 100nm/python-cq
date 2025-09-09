@@ -91,39 +91,48 @@ class HandlerDecorator[I, O]:
 
     def __call__(
         self,
-        input_or_handler: type[I] | HandlerType[[I], O] | None = None,
+        input_or_handler_type: type[I] | HandlerType[[I], O] | None = None,
         /,
     ) -> Any:
-        def decorator(
-            wrapped: HandlerType[[I], O],
-            *,
-            input_type: type[I] | None = None,
-        ) -> HandlerType[[I], O]:
-            factory = self.injection_module.make_async_factory(wrapped)
-            input_type = input_type or _resolve_input_type(wrapped)
-            self.manager.subscribe(input_type, factory)
-            return wrapped
+        if input_or_handler_type is None:
+            return self.__decorator
 
-        if input_or_handler is None:
-            return decorator
+        elif isclass(input_or_handler_type) and issubclass(
+            input_or_handler_type,
+            Handler,
+        ):
+            return self.__decorator(input_or_handler_type)
 
-        elif isclass(input_or_handler) and issubclass(input_or_handler, Handler):
-            return decorator(input_or_handler)
+        return partial(self.__decorator, input_type=input_or_handler_type)  # type: ignore[arg-type]
 
-        else:
-            return partial(decorator, input_type=input_or_handler)  # type: ignore[arg-type]
+    def __decorator(
+        self,
+        wrapped: HandlerType[[I], O],
+        *,
+        input_type: type[I] | None = None,
+    ) -> HandlerType[[I], O]:
+        factory = self.injection_module.make_async_factory(wrapped)
+        input_type = input_type or _resolve_input_type(wrapped)
+        self.manager.subscribe(input_type, factory)
+        return wrapped
 
 
 def _resolve_input_type[I, O](handler_type: HandlerType[[I], O]) -> type[I]:
     fake_handle_method = handler_type.handle.__get__(NotImplemented)
     signature = inspect_signature(fake_handle_method, eval_str=True)
-    parameters = iter(signature.parameters.values())
-    input_type = next(parameters).annotation
 
-    if input_type is Parameter.empty:
-        raise TypeError("Unable to resolve input type.")
+    for parameter in signature.parameters.values():
+        input_type = parameter.annotation
 
-    return input_type
+        if input_type is Parameter.empty:
+            break
+
+        return input_type
+
+    raise TypeError(
+        f"Unable to resolve input type for handler `{handler_type}`, "
+        "`handle` method must have a type annotation for its first parameter."
+    )
 
 
 def _make_handle_function[I, O](
