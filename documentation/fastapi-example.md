@@ -7,7 +7,7 @@ Here's an example of its integration:
 ```python
 from cq import CommandBus, command_handler, new_command_bus
 from fastapi import FastAPI, status
-from injection import injectable, singleton
+from injection import injectable
 from injection.ext.fastapi import Inject
 from pydantic import BaseModel
 
@@ -16,7 +16,7 @@ from pydantic import BaseModel
 @injectable
 class ExampleService: ...
 
-@singleton
+@injectable
 def override_command_bus_recipe() -> CommandBus:
     bus = new_command_bus()
     bus.add_middlewares(...)  # Add middlewares here
