@@ -23,7 +23,8 @@ test = [
 name = "python-cq"
 version = "0.0.0"
 description = "Lightweight CQRS library."
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.12, <4"
 authors = [{ name = "remimd" }]
@@ -36,6 +37,8 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",
     "Natural Language :: English",
