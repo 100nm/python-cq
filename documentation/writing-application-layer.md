@@ -177,9 +177,9 @@ To add a middleware, you need to override the bus recipe.
 
 ```python
 from cq import CommandBus, new_command_bus
-from injection import singleton
+from injection import injectable
 
-@singleton
+@injectable
 def override_command_bus_recipe() -> CommandBus:
     bus = new_command_bus()
     bus.add_middlewares(log_middleware, transaction_middleware)
