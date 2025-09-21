@@ -1,6 +1,6 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Self
+from typing import Any, Self, overload
 
 from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
 
@@ -23,6 +23,24 @@ class Pipe[I, O](BaseDispatcher[I, O]):
         super().__init__()
         self.__dispatcher = dispatcher
         self.__steps = []
+
+    @overload
+    def step[T](
+        self,
+        wrapped: PipeConverter[T, Any],
+        /,
+        *,
+        dispatcher: Dispatcher[T, Any] | None = ...,
+    ) -> PipeConverter[T, Any]: ...
+
+    @overload
+    def step[T](
+        self,
+        wrapped: None = ...,
+        /,
+        *,
+        dispatcher: Dispatcher[T, Any] | None = ...,
+    ) -> Callable[[PipeConverter[T, Any]], PipeConverter[T, Any]]: ...
 
     def step[T](
         self,
