@@ -22,7 +22,7 @@ test = [
 [project]
 name = "python-cq"
 version = "0.0.0"
-description = "Lightweight CQRS library."
+description = "Lightweight CQRS library for async Python projects."
 license = "MIT"
 license-files = ["LICENSE"]
 readme = "README.md"
