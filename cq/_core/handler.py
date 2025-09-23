@@ -94,6 +94,8 @@ class HandlerDecorator[I, O]:
         self,
         input_or_handler_type: type[I],
         /,
+        *,
+        threadsafe: bool | None = ...,
     ) -> Callable[[HandlerType[[I], O]], HandlerType[[I], O]]: ...
 
     @overload
@@ -101,6 +103,8 @@ class HandlerDecorator[I, O]:
         self,
         input_or_handler_type: HandlerType[[I], O],
         /,
+        *,
+        threadsafe: bool | None = ...,
     ) -> HandlerType[[I], O]: ...
 
     @overload
@@ -108,31 +112,39 @@ class HandlerDecorator[I, O]:
         self,
         input_or_handler_type: None = ...,
         /,
+        *,
+        threadsafe: bool | None = ...,
     ) -> Callable[[HandlerType[[I], O]], HandlerType[[I], O]]: ...
 
     def __call__(
         self,
         input_or_handler_type: type[I] | HandlerType[[I], O] | None = None,
         /,
+        *,
+        threadsafe: bool | None = None,
     ) -> Any:
-        if input_or_handler_type is None:
-            return self.__decorator
-
-        elif isclass(input_or_handler_type) and issubclass(
-            input_or_handler_type,
-            Handler,
+        if (
+            input_or_handler_type is not None
+            and isclass(input_or_handler_type)
+            and issubclass(input_or_handler_type, Handler)
         ):
-            return self.__decorator(input_or_handler_type)
+            return self.__decorator(input_or_handler_type, threadsafe=threadsafe)
 
-        return partial(self.__decorator, input_type=input_or_handler_type)  # type: ignore[arg-type]
+        return partial(
+            self.__decorator,
+            input_type=input_or_handler_type,  # type: ignore[arg-type]
+            threadsafe=threadsafe,
+        )
 
     def __decorator(
         self,
         wrapped: HandlerType[[I], O],
+        /,
         *,
         input_type: type[I] | None = None,
+        threadsafe: bool | None = None,
     ) -> HandlerType[[I], O]:
-        factory = self.injection_module.make_async_factory(wrapped)
+        factory = self.injection_module.make_async_factory(wrapped, threadsafe)
         input_type = input_type or _resolve_input_type(wrapped)
         self.manager.subscribe(input_type, factory)
         return wrapped
