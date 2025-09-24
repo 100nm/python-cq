@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Final
 
 import injection
 
@@ -22,23 +22,24 @@ type QueryBus[T] = Bus[Query, T]
 AnyCommandBus = CommandBus[Any]
 
 
-command_handler: HandlerDecorator[Command, Any] = HandlerDecorator(
+command_handler: Final[HandlerDecorator[Command, Any]] = HandlerDecorator(
     SingleHandlerManager(),
 )
-event_handler: HandlerDecorator[Event, None] = HandlerDecorator(
+event_handler: Final[HandlerDecorator[Event, None]] = HandlerDecorator(
     MultipleHandlerManager(),
 )
-query_handler: HandlerDecorator[Query, Any] = HandlerDecorator(
+query_handler: Final[HandlerDecorator[Query, Any]] = HandlerDecorator(
     SingleHandlerManager(),
 )
 
 
 @injection.injectable(inject=False, mode="fallback")
-def new_command_bus() -> CommandBus:  # type: ignore[type-arg]
+def new_command_bus(*, threadsafe: bool | None = None) -> CommandBus:  # type: ignore[type-arg]
     bus = SimpleBus(command_handler.manager)
     transaction_scope_middleware = InjectionScopeMiddleware(
         CQScope.TRANSACTION,
         exist_ok=True,
+        threadsafe=threadsafe,
     )
     bus.add_middlewares(transaction_scope_middleware)
     return bus
