@@ -34,9 +34,6 @@ class SimpleRelatedEvents(RelatedEvents):
 async def related_events_recipe(event_bus: EventBus) -> AsyncIterator[RelatedEvents]:
     yield (instance := SimpleRelatedEvents())
 
-    if not instance:
-        return
-
     async with anyio.create_task_group() as task_group:
         for event in instance.items:
             task_group.start_soon(event_bus.dispatch, event)
