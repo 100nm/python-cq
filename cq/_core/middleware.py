@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator, Awaitable, Callable, Iterator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Self
 
@@ -12,10 +12,6 @@ type Middleware[**P, T] = Callable[P, MiddlewareResult[T]]
 class MiddlewareGroup[**P, T]:
     __middlewares: list[Middleware[P, T]] = field(default_factory=list, init=False)
 
-    @property
-    def __stack(self) -> Iterator[Middleware[P, T]]:
-        return iter(self.__middlewares)
-
     def add(self, *middlewares: Middleware[P, T]) -> Self:
         self.__middlewares.extend(reversed(middlewares))
         return self
@@ -27,7 +23,16 @@ class MiddlewareGroup[**P, T]:
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
-        return await self.__apply_stack(handler, self.__stack)(*args, **kwargs)
+        return await self.__apply_stack(handler)(*args, **kwargs)
+
+    def __apply_stack(
+        self,
+        handler: Callable[P, Awaitable[T]],
+    ) -> Callable[P, Awaitable[T]]:
+        for middleware in self.__middlewares:
+            handler = self.__apply_middleware(handler, middleware)
+
+        return handler
 
     @classmethod
     def __apply_middleware(
@@ -62,15 +67,3 @@ class MiddlewareGroup[**P, T]:
             return value
 
         return wrapper
-
-    @classmethod
-    def __apply_stack(
-        cls,
-        handler: Callable[P, Awaitable[T]],
-        stack: Iterator[Middleware[P, T]],
-    ) -> Callable[P, Awaitable[T]]:
-        for middleware in stack:
-            new_handler = cls.__apply_middleware(handler, middleware)
-            return cls.__apply_stack(new_handler, stack)
-
-        return handler
