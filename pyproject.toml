@@ -26,7 +26,7 @@ description = "Lightweight CQRS library for async Python projects."
 license = "MIT"
 license-files = ["LICENSE"]
 readme = "README.md"
-requires-python = ">=3.12, <4"
+requires-python = ">=3.12, <3.15"
 authors = [{ name = "remimd" }]
 keywords = ["cqrs"]
 classifiers = [
@@ -39,6 +39,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",
     "Natural Language :: English",
