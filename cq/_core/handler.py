@@ -151,8 +151,8 @@ class HandlerDecorator[I, O]:
 
 
 def _resolve_input_type[I, O](handler_type: HandlerType[[I], O]) -> type[I]:
-    fake_handle_method = handler_type.handle.__get__(NotImplemented)
-    signature = inspect_signature(fake_handle_method, eval_str=True)
+    fake_method = handler_type.handle.__get__(NotImplemented, handler_type)
+    signature = inspect_signature(fake_method, eval_str=True)
 
     for parameter in signature.parameters.values():
         input_type = parameter.annotation
