@@ -1,4 +1,4 @@
-from ._core.defer import DeferredBus
+from ._core.dispatcher.base import DeferredDispatcher, Dispatcher
 from ._core.dispatcher.bus import Bus
 from ._core.dispatcher.pipe import Pipe
 from ._core.message import (
@@ -26,7 +26,8 @@ __all__ = (
     "CQScope",
     "Command",
     "CommandBus",
-    "DeferredBus",
+    "DeferredDispatcher",
+    "Dispatcher",
     "Event",
     "EventBus",
     "Middleware",

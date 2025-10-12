@@ -13,8 +13,13 @@ class Dispatcher[I, O](Protocol):
     async def dispatch(self, input_value: I, /) -> O:
         raise NotImplementedError
 
+
+@runtime_checkable
+class DeferredDispatcher[I](Protocol):
+    __slots__ = ()
+
     @abstractmethod
-    def add_middlewares(self, *middlewares: Middleware[[I], O]) -> Self:
+    async def defer(self, input_value: I, /) -> None:
         raise NotImplementedError
 
 
