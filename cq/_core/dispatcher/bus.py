@@ -12,6 +12,7 @@ from cq._core.handler import (
     MultipleHandlerManager,
     SingleHandlerManager,
 )
+from cq._core.middleware import Middleware
 
 type Listener[T] = Callable[[T], Awaitable[Any]]
 
@@ -21,11 +22,15 @@ class Bus[I, O](Dispatcher[I, O], Protocol):
     __slots__ = ()
 
     @abstractmethod
-    def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
+    def add_listeners(self, *listeners: Listener[I]) -> Self:
         raise NotImplementedError
 
     @abstractmethod
-    def add_listeners(self, *listeners: Listener[I]) -> Self:
+    def add_middlewares(self, *middlewares: Middleware[[I], O]) -> Self:
+        raise NotImplementedError
+
+    @abstractmethod
+    def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
         raise NotImplementedError
 
 

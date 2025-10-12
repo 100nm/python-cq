@@ -1,44 +1,73 @@
 from dataclasses import dataclass
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import BackgroundTasks, Depends
 from injection.ext.fastapi import Inject
 
-from cq import Bus, Command, CommandBus, DeferredBus, Event, EventBus, Query, QueryBus
+from cq import (
+    Command,
+    CommandBus,
+    DeferredDispatcher,
+    Dispatcher,
+    Event,
+    EventBus,
+    Query,
+    QueryBus,
+)
 
-__all__ = ("DeferredCommandBus", "DeferredEventBus", "DeferredQueryBus")
+__all__ = (
+    "DeferredCommandBus",
+    "DeferredEventBus",
+    "DeferredQueryBus",
+    "FastAPIDeferredDispatcher",
+)
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
-class FastAPIDeferredBus[I](DeferredBus[I]):
+class FastAPIDeferredDispatcher[I](DeferredDispatcher[I]):
     background_tasks: BackgroundTasks
-    bus: Bus[I, Any]
+    dispatcher: Dispatcher[I, Any]
 
     async def defer(self, input_value: I, /) -> None:
-        self.background_tasks.add_task(self.bus.dispatch, input_value)
+        self.background_tasks.add_task(self.dispatcher.dispatch, input_value)
 
 
 async def new_deferred_command_bus[T](
     background_tasks: BackgroundTasks,
     command_bus: Inject[CommandBus[T]],
-) -> DeferredBus[Command]:
-    return FastAPIDeferredBus(background_tasks, command_bus)
+) -> DeferredDispatcher[Command]:
+    return FastAPIDeferredDispatcher(background_tasks, command_bus)
 
 
 async def new_deferred_event_bus(
     background_tasks: BackgroundTasks,
     event_bus: Inject[EventBus],
-) -> DeferredBus[Event]:
-    return FastAPIDeferredBus(background_tasks, event_bus)
+) -> DeferredDispatcher[Event]:
+    return FastAPIDeferredDispatcher(background_tasks, event_bus)
 
 
 async def new_deferred_query_bus[T](
     background_tasks: BackgroundTasks,
     query_bus: Inject[QueryBus[T]],
-) -> DeferredBus[Query]:
-    return FastAPIDeferredBus(background_tasks, query_bus)
+) -> DeferredDispatcher[Query]:
+    return FastAPIDeferredDispatcher(background_tasks, query_bus)
 
 
-DeferredCommandBus = Annotated[DeferredBus[Command], Depends(new_deferred_command_bus)]
-DeferredEventBus = Annotated[DeferredBus[Event], Depends(new_deferred_event_bus)]
-DeferredQueryBus = Annotated[DeferredBus[Query], Depends(new_deferred_query_bus)]
+if TYPE_CHECKING:
+    type DeferredCommandBus = DeferredDispatcher[Command]
+    type DeferredEventBus = DeferredDispatcher[Event]
+    type DeferredQueryBus = DeferredDispatcher[Query]
+
+else:
+    DeferredCommandBus = Annotated[
+        DeferredDispatcher[Command],
+        Depends(new_deferred_command_bus, use_cache=False),
+    ]
+    DeferredEventBus = Annotated[
+        DeferredDispatcher[Event],
+        Depends(new_deferred_event_bus, use_cache=False),
+    ]
+    DeferredQueryBus = Annotated[
+        DeferredDispatcher[Query],
+        Depends(new_deferred_query_bus, use_cache=False),
+    ]
