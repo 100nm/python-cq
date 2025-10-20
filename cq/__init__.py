@@ -1,6 +1,7 @@
 from ._core.dispatcher.base import DeferredDispatcher, Dispatcher
 from ._core.dispatcher.bus import Bus
-from ._core.dispatcher.pipe import Pipe
+from ._core.dispatcher.lazy import LazyDispatcher
+from ._core.dispatcher.pipe import ContextPipeline, Pipe
 from ._core.message import (
     AnyCommandBus,
     Command,
@@ -17,6 +18,7 @@ from ._core.message import (
     query_handler,
 )
 from ._core.middleware import Middleware, MiddlewareResult
+from ._core.pipetools import ContextCommandPipeline
 from ._core.related_events import RelatedEvents
 from ._core.scope import CQScope
 
@@ -26,10 +28,13 @@ __all__ = (
     "CQScope",
     "Command",
     "CommandBus",
+    "ContextCommandPipeline",
+    "ContextPipeline",
     "DeferredDispatcher",
     "Dispatcher",
     "Event",
     "EventBus",
+    "LazyDispatcher",
     "Middleware",
     "MiddlewareResult",
     "Pipe",
