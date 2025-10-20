@@ -30,7 +30,7 @@ async def pipeline_example(command_bus: AnyCommandBus) -> None:
 
 ## ContextPipeline
 
-`Pipe` has a big problem: it isn't possible to have values that go through the steps. Each converter in a `Pipe` 
+A limitation of `Pipe` is that it isn't possible to have values that go through the steps. Each converter in a `Pipe` 
 receives only the output of the previous one, but the intermediate state, any contextual information, is lost between 
 steps.
 
