@@ -1,7 +1,7 @@
 from collections import deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Protocol, Self, overload
+from typing import TYPE_CHECKING, Any, Protocol, Self, overload
 
 from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
 from cq._core.middleware import Middleware
@@ -34,23 +34,25 @@ class Pipe[I, O](BaseDispatcher[I, O]):
         self.__dispatcher = dispatcher
         self.__steps = []
 
-    @overload
-    def step[T](
-        self,
-        wrapped: PipeConverter[T, Any],
-        /,
-        *,
-        dispatcher: Dispatcher[T, Any] | None = ...,
-    ) -> PipeConverter[T, Any]: ...
+    if TYPE_CHECKING:  # pragma: no cover
 
-    @overload
-    def step[T](
-        self,
-        wrapped: None = ...,
-        /,
-        *,
-        dispatcher: Dispatcher[T, Any] | None = ...,
-    ) -> Callable[[PipeConverter[T, Any]], PipeConverter[T, Any]]: ...
+        @overload
+        def step[T](
+            self,
+            wrapped: PipeConverter[T, Any],
+            /,
+            *,
+            dispatcher: Dispatcher[T, Any] | None = ...,
+        ) -> PipeConverter[T, Any]: ...
+
+        @overload
+        def step[T](
+            self,
+            wrapped: None = ...,
+            /,
+            *,
+            dispatcher: Dispatcher[T, Any] | None = ...,
+        ) -> Callable[[PipeConverter[T, Any]], PipeConverter[T, Any]]: ...
 
     def step[T](
         self,
@@ -114,23 +116,33 @@ class ContextPipeline[I]:
         self.__middlewares = deque()
         self.__steps = []
 
-    @overload
-    def __get__[O](
-        self,
-        instance: O,
-        owner: type[O] | None = ...,
-    ) -> Dispatcher[I, O]: ...
+    if TYPE_CHECKING:  # pragma: no cover
 
-    @overload
-    def __get__(self, instance: None = ..., owner: type | None = ...) -> Self: ...
+        @overload
+        def __get__[O](self, instance: None, owner: type[O], /) -> Dispatcher[I, O]: ...
+
+        @overload
+        def __get__[O](
+            self,
+            instance: O,
+            owner: type[O] | None = ...,
+            /,
+        ) -> Dispatcher[I, O]: ...
+
+        @overload
+        def __get__(self, instance: None = ..., owner: None = ..., /) -> Self: ...
 
     def __get__[O](
         self,
         instance: O | None = None,
         owner: type[O] | None = None,
+        /,
     ) -> Self | Dispatcher[I, O]:
         if instance is None:
-            return self
+            if owner is None:
+                return self
+
+            instance = owner()
 
         pipeline = self.__new_pipeline(instance, owner)
         return BoundContextPipeline(instance, pipeline)
@@ -139,23 +151,25 @@ class ContextPipeline[I]:
         self.__middlewares.extendleft(reversed(middlewares))
         return self
 
-    @overload
-    def step[T](
-        self,
-        wrapped: PipeConverterMethod[T, Any],
-        /,
-        *,
-        dispatcher: Dispatcher[T, Any] | None = ...,
-    ) -> PipeConverterMethod[T, Any]: ...
+    if TYPE_CHECKING:  # pragma: no cover
 
-    @overload
-    def step[T](
-        self,
-        wrapped: None = ...,
-        /,
-        *,
-        dispatcher: Dispatcher[T, Any] | None = ...,
-    ) -> Callable[[PipeConverterMethod[T, Any]], PipeConverterMethod[T, Any]]: ...
+        @overload
+        def step[T](
+            self,
+            wrapped: PipeConverterMethod[T, Any],
+            /,
+            *,
+            dispatcher: Dispatcher[T, Any] | None = ...,
+        ) -> PipeConverterMethod[T, Any]: ...
+
+        @overload
+        def step[T](
+            self,
+            wrapped: None = ...,
+            /,
+            *,
+            dispatcher: Dispatcher[T, Any] | None = ...,
+        ) -> Callable[[PipeConverterMethod[T, Any]], PipeConverterMethod[T, Any]]: ...
 
     def step[T](
         self,

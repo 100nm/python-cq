@@ -53,7 +53,7 @@ async def new_deferred_query_bus[T](
     return FastAPIDeferredDispatcher(background_tasks, query_bus)
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     type DeferredCommandBus = DeferredDispatcher[Command]
     type DeferredEventBus = DeferredDispatcher[Event]
     type DeferredQueryBus = DeferredDispatcher[Query]

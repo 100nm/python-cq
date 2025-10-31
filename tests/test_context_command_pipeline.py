@@ -56,7 +56,7 @@ class TestContextCommandPipeline:
                 self.baz = baz
 
         cmd = Command1()
-        ctx = await Context().pipeline.dispatch(cmd)
+        ctx = await Context.pipeline.dispatch(cmd)
 
         assert isinstance(ctx, Context)
         assert isinstance(ctx.foo, Foo)
