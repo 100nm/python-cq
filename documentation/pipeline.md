@@ -64,6 +64,6 @@ class ContextExample:
 
 async def how_to_dispatch() -> None:
     command = FirstCommand(...)
-    context = await ContextExample().pipeline.dispatch(command)
+    context = await ContextExample.pipeline.dispatch(command)
     # ...
 ```
