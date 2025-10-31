@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from functools import partial
 from inspect import Parameter, getmro, isclass
 from inspect import signature as inspect_signature
-from typing import Any, Protocol, Self, overload, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, Self, overload, runtime_checkable
 
 import injection
 
@@ -89,32 +89,34 @@ class HandlerDecorator[I, O]:
     manager: HandlerManager[I, O]
     injection_module: injection.Module = field(default_factory=injection.mod)
 
-    @overload
-    def __call__(
-        self,
-        input_or_handler_type: type[I],
-        /,
-        *,
-        threadsafe: bool | None = ...,
-    ) -> Callable[[HandlerType[[I], O]], HandlerType[[I], O]]: ...
+    if TYPE_CHECKING:  # pragma: no cover
 
-    @overload
-    def __call__(
-        self,
-        input_or_handler_type: HandlerType[[I], O],
-        /,
-        *,
-        threadsafe: bool | None = ...,
-    ) -> HandlerType[[I], O]: ...
+        @overload
+        def __call__(
+            self,
+            input_or_handler_type: type[I],
+            /,
+            *,
+            threadsafe: bool | None = ...,
+        ) -> Callable[[HandlerType[[I], O]], HandlerType[[I], O]]: ...
 
-    @overload
-    def __call__(
-        self,
-        input_or_handler_type: None = ...,
-        /,
-        *,
-        threadsafe: bool | None = ...,
-    ) -> Callable[[HandlerType[[I], O]], HandlerType[[I], O]]: ...
+        @overload
+        def __call__(
+            self,
+            input_or_handler_type: HandlerType[[I], O],
+            /,
+            *,
+            threadsafe: bool | None = ...,
+        ) -> HandlerType[[I], O]: ...
+
+        @overload
+        def __call__(
+            self,
+            input_or_handler_type: None = ...,
+            /,
+            *,
+            threadsafe: bool | None = ...,
+        ) -> Callable[[HandlerType[[I], O]], HandlerType[[I], O]]: ...
 
     def __call__(
         self,
