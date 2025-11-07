@@ -1,5 +1,5 @@
-from enum import StrEnum, auto
+from enum import StrEnum
 
 
 class CQScope(StrEnum):
-    TRANSACTION = auto()
+    TRANSACTION = "__cq_transaction__"
