@@ -50,6 +50,7 @@ classifiers = [
 dependencies = [
     "anyio",
     "python-injection",
+    "type-analyzer",
 ]
 
 [project.urls]

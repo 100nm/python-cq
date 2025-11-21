@@ -3,11 +3,12 @@ from collections import defaultdict
 from collections.abc import Awaitable, Callable, Iterator
 from dataclasses import dataclass, field
 from functools import partial
-from inspect import Parameter, getmro, isclass
+from inspect import Parameter, isclass
 from inspect import signature as inspect_signature
 from typing import TYPE_CHECKING, Any, Protocol, Self, overload, runtime_checkable
 
 import injection
+from type_analyzer import MatchingTypesConfig, matching_types
 
 type HandlerType[**P, T] = type[Handler[P, T]]
 type HandlerFactory[**P, T] = Callable[..., Awaitable[Handler[P, T]]]
@@ -49,7 +50,7 @@ class MultipleHandlerManager[I, O](HandlerManager[I, O]):
         self,
         input_type: type[I],
     ) -> Iterator[Callable[[I], Awaitable[O]]]:
-        for it in getmro(input_type):
+        for it in _standardize_input_type(input_type):
             for factory in self.__factories.get(it, ()):
                 yield _make_handle_function(factory)
 
@@ -69,7 +70,7 @@ class SingleHandlerManager[I, O](HandlerManager[I, O]):
         self,
         input_type: type[I],
     ) -> Iterator[Callable[[I], Awaitable[O]]]:
-        for it in getmro(input_type):
+        for it in _standardize_input_type(input_type):
             factory = self.__factories.get(it, None)
             if factory is not None:
                 yield _make_handle_function(factory)
@@ -168,6 +169,15 @@ def _resolve_input_type[I, O](handler_type: HandlerType[[I], O]) -> type[I]:
         f"Unable to resolve input type for handler `{handler_type}`, "
         "`handle` method must have a type annotation for its first parameter."
     )
+
+
+def _standardize_input_type(input_type: Any) -> tuple[Any, ...]:
+    config = MatchingTypesConfig(
+        with_bases=True,
+        with_origin=True,
+        with_type_alias_value=True,
+    )
+    return matching_types(input_type, config)
 
 
 def _make_handle_function[I, O](
