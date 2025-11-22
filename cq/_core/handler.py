@@ -78,14 +78,15 @@ class SingleHandlerManager[I, O](HandlerManager[I, O]):
                 yield _make_handle_function(factory)
 
     def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
-        for key_type in _build_key_types(input_type):
+        entries = {key_type: factory for key_type in _build_key_types(input_type)}
+
+        for key_type in entries:
             if key_type in self.__factories:
                 raise RuntimeError(
                     f"A handler is already registered for the input type: `{key_type}`."
                 )
 
-            self.__factories[key_type] = factory
-
+        self.__factories.update(entries)
         return self
 
 
