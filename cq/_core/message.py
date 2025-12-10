@@ -34,6 +34,12 @@ query_handler: Final[HandlerDecorator[Query, Any]] = HandlerDecorator(
 )
 
 
+@injection.injectable(
+    ignore_type_hint=True,
+    inject=False,
+    on=CommandBus,
+    mode="fallback",
+)
 def new_command_bus(*, threadsafe: bool | None = None) -> Bus[Command, Any]:
     bus = SimpleBus(command_handler.manager)
     transaction_scope_middleware = InjectionScopeMiddleware(
@@ -45,27 +51,21 @@ def new_command_bus(*, threadsafe: bool | None = None) -> Bus[Command, Any]:
     return bus
 
 
+@injection.injectable(
+    ignore_type_hint=True,
+    inject=False,
+    on=EventBus,
+    mode="fallback",
+)
 def new_event_bus() -> Bus[Event, None]:
     return TaskBus(event_handler.manager)
 
 
+@injection.injectable(
+    ignore_type_hint=True,
+    inject=False,
+    on=QueryBus,
+    mode="fallback",
+)
 def new_query_bus() -> Bus[Query, Any]:
     return SimpleBus(query_handler.manager)
-
-
-@injection.injectable(inject=False, mode="fallback")
-def _() -> CommandBus:  # type: ignore[type-arg]
-    return new_command_bus()
-
-
-@injection.injectable(inject=False, mode="fallback")
-def _() -> EventBus:
-    return new_event_bus()
-
-
-@injection.injectable(inject=False, mode="fallback")
-def _() -> QueryBus:  # type: ignore[type-arg]
-    return new_query_bus()
-
-
-del _
