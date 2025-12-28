@@ -20,7 +20,7 @@ nav:
       - Messages and handlers: guides/messages.md
       - Dispatching messages: guides/dispatching.md
       - Configuring a bus: guides/configuring.md
-      - Executing multiple commands: guides/multiple-commands.md
+      - Executing multiple commands: guides/pipeline.md
 
 plugins:
   - search
