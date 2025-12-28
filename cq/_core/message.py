@@ -6,8 +6,8 @@ from cq._core.dispatcher.base import Dispatcher
 from cq._core.dispatcher.bus import Bus, SimpleBus, TaskBus
 from cq._core.handler import (
     HandlerDecorator,
-    MultipleHandlerManager,
-    SingleHandlerManager,
+    MultipleHandlerRegistry,
+    SingleHandlerRegistry,
 )
 from cq._core.scope import CQScope
 from cq.middlewares.scope import InjectionScopeMiddleware
@@ -24,13 +24,13 @@ AnyCommandBus = CommandBus[Any]
 
 
 command_handler: Final[HandlerDecorator[Command, Any]] = HandlerDecorator(
-    SingleHandlerManager(),
+    SingleHandlerRegistry(),
 )
 event_handler: Final[HandlerDecorator[Event, None]] = HandlerDecorator(
-    MultipleHandlerManager(),
+    MultipleHandlerRegistry(),
 )
 query_handler: Final[HandlerDecorator[Query, Any]] = HandlerDecorator(
-    SingleHandlerManager(),
+    SingleHandlerRegistry(),
 )
 
 
@@ -41,7 +41,7 @@ query_handler: Final[HandlerDecorator[Query, Any]] = HandlerDecorator(
     mode="fallback",
 )
 def new_command_bus(*, threadsafe: bool | None = None) -> Bus[Command, Any]:
-    bus = SimpleBus(command_handler.manager)
+    bus = SimpleBus(command_handler.registry)
     transaction_scope_middleware = InjectionScopeMiddleware(
         CQScope.TRANSACTION,
         exist_ok=True,
@@ -58,7 +58,7 @@ def new_command_bus(*, threadsafe: bool | None = None) -> Bus[Command, Any]:
     mode="fallback",
 )
 def new_event_bus() -> Bus[Event, None]:
-    return TaskBus(event_handler.manager)
+    return TaskBus(event_handler.registry)
 
 
 @injection.injectable(
@@ -68,4 +68,4 @@ def new_event_bus() -> Bus[Event, None]:
     mode="fallback",
 )
 def new_query_bus() -> Bus[Query, Any]:
-    return SimpleBus(query_handler.manager)
+    return SimpleBus(query_handler.registry)

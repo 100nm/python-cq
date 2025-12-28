@@ -24,7 +24,7 @@ class Handler[**P, T](Protocol):
 
 
 @runtime_checkable
-class HandlerManager[I, O](Protocol):
+class HandlerRegistry[I, O](Protocol):
     __slots__ = ()
 
     @abstractmethod
@@ -40,7 +40,7 @@ class HandlerManager[I, O](Protocol):
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
-class MultipleHandlerManager[I, O](HandlerManager[I, O]):
+class MultipleHandlerRegistry[I, O](HandlerRegistry[I, O]):
     __factories: dict[type[I], list[HandlerFactory[[I], O]]] = field(
         default_factory=partial(defaultdict, list),
         init=False,
@@ -62,7 +62,7 @@ class MultipleHandlerManager[I, O](HandlerManager[I, O]):
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
-class SingleHandlerManager[I, O](HandlerManager[I, O]):
+class SingleHandlerRegistry[I, O](HandlerRegistry[I, O]):
     __factories: dict[type[I], HandlerFactory[[I], O]] = field(
         default_factory=dict,
         init=False,
@@ -92,7 +92,7 @@ class SingleHandlerManager[I, O](HandlerManager[I, O]):
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class HandlerDecorator[I, O]:
-    manager: HandlerManager[I, O]
+    registry: HandlerRegistry[I, O]
     injection_module: injection.Module = field(default_factory=injection.mod)
 
     if TYPE_CHECKING:  # pragma: no cover
@@ -154,7 +154,7 @@ class HandlerDecorator[I, O]:
     ) -> HandlerType[[I], O]:
         factory = self.injection_module.make_async_factory(wrapped, threadsafe)
         input_type = input_type or _resolve_input_type(wrapped)
-        self.manager.subscribe(input_type, factory)
+        self.registry.subscribe(input_type, factory)
         return wrapped
 
 
