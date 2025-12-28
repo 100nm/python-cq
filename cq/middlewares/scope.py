@@ -21,13 +21,13 @@ class InjectionScopeMiddleware:
 
     async def __call__(self, *args: Any, **kwargs: Any) -> MiddlewareResult[Any]:
         async with AsyncExitStack() as stack:
-            cm = adefine_scope(self.scope_name, threadsafe=self.threadsafe)
             try:
-                await stack.enter_async_context(cm)
+                await stack.enter_async_context(
+                    adefine_scope(self.scope_name, threadsafe=self.threadsafe)
+                )
 
             except ScopeAlreadyDefinedError:
                 if not self.exist_ok:
                     raise
 
-            del cm
             yield
