@@ -90,6 +90,10 @@ class SingleHandlerRegistry[I, O](HandlerRegistry[I, O]):
         return self
 
 
+class _Decorator(Protocol):
+    def __call__[T](self, wrapped: T, /) -> T: ...
+
+
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class HandlerDecorator[I, O]:
     registry: HandlerRegistry[I, O]
@@ -104,16 +108,16 @@ class HandlerDecorator[I, O]:
             /,
             *,
             threadsafe: bool | None = ...,
-        ) -> Callable[[HandlerType[[I], O]], HandlerType[[I], O]]: ...
+        ) -> _Decorator: ...
 
         @overload
-        def __call__(
+        def __call__[T](
             self,
-            input_or_handler_type: HandlerType[[I], O],
+            input_or_handler_type: T,
             /,
             *,
             threadsafe: bool | None = ...,
-        ) -> HandlerType[[I], O]: ...
+        ) -> T: ...
 
         @overload
         def __call__(
@@ -122,11 +126,11 @@ class HandlerDecorator[I, O]:
             /,
             *,
             threadsafe: bool | None = ...,
-        ) -> Callable[[HandlerType[[I], O]], HandlerType[[I], O]]: ...
+        ) -> _Decorator: ...
 
-    def __call__(
+    def __call__[T](
         self,
-        input_or_handler_type: type[I] | HandlerType[[I], O] | None = None,
+        input_or_handler_type: type[I] | T | None = None,
         /,
         *,
         threadsafe: bool | None = None,
