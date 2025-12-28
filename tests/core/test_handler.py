@@ -2,7 +2,7 @@ from typing import Any, NoReturn
 
 import pytest
 
-from cq._core.handler import HandlerDecorator, SingleHandlerManager
+from cq._core.handler import HandlerDecorator, SingleHandlerRegistry
 
 
 class _Handler:
@@ -13,7 +13,7 @@ class _Handler:
 class TestHandlerDecorator:
     @pytest.fixture(scope="function")
     def handler_decorator(self) -> HandlerDecorator[Any, Any]:
-        return HandlerDecorator(SingleHandlerManager())
+        return HandlerDecorator(SingleHandlerRegistry())
 
     def test_call_with_success_return_wrapped_type(
         self,

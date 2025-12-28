@@ -8,9 +8,9 @@ from anyio.abc import TaskGroup
 from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
 from cq._core.handler import (
     HandlerFactory,
-    HandlerManager,
-    MultipleHandlerManager,
-    SingleHandlerManager,
+    HandlerRegistry,
+    MultipleHandlerRegistry,
+    SingleHandlerRegistry,
 )
 from cq._core.middleware import Middleware
 
@@ -35,29 +35,29 @@ class Bus[I, O](Dispatcher[I, O], Protocol):
 
 
 class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
-    __slots__ = ("__listeners", "__manager")
+    __slots__ = ("__listeners", "__registry")
 
     __listeners: list[Listener[I]]
-    __manager: HandlerManager[I, O]
+    __registry: HandlerRegistry[I, O]
 
-    def __init__(self, manager: HandlerManager[I, O]) -> None:
+    def __init__(self, registry: HandlerRegistry[I, O], /) -> None:
         super().__init__()
         self.__listeners = []
-        self.__manager = manager
+        self.__registry = registry
 
     def add_listeners(self, *listeners: Listener[I]) -> Self:
         self.__listeners.extend(listeners)
         return self
 
     def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
-        self.__manager.subscribe(input_type, factory)
+        self.__registry.subscribe(input_type, factory)
         return self
 
     def _handlers_from(
         self,
         input_type: type[I],
     ) -> Iterator[Callable[[I], Awaitable[O]]]:
-        return self.__manager.handlers_from(input_type)
+        return self.__registry.handlers_from(input_type)
 
     def _trigger_listeners(self, input_value: I, /, task_group: TaskGroup) -> None:
         for listener in self.__listeners:
@@ -67,8 +67,8 @@ class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
 class SimpleBus[I, O](BaseBus[I, O]):
     __slots__ = ()
 
-    def __init__(self, manager: HandlerManager[I, O] | None = None) -> None:
-        super().__init__(manager or SingleHandlerManager())
+    def __init__(self, registry: HandlerRegistry[I, O] | None = None, /) -> None:
+        super().__init__(registry or SingleHandlerRegistry())
 
     async def dispatch(self, input_value: I, /) -> O:
         async with anyio.create_task_group() as task_group:
@@ -83,8 +83,8 @@ class SimpleBus[I, O](BaseBus[I, O]):
 class TaskBus[I](BaseBus[I, None]):
     __slots__ = ()
 
-    def __init__(self, manager: HandlerManager[I, None] | None = None) -> None:
-        super().__init__(manager or MultipleHandlerManager())
+    def __init__(self, registry: HandlerRegistry[I, None] | None = None, /) -> None:
+        super().__init__(registry or MultipleHandlerRegistry())
 
     async def dispatch(self, input_value: I, /) -> None:
         async with anyio.create_task_group() as task_group:
