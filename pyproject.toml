@@ -8,10 +8,9 @@ dev = [
     "mypy",
     "ruff",
 ]
-example = [
-    "fastapi",
-    "msgspec",
-    "pydantic",
+docs = [
+    "mkdocs",
+    "mkdocs-material",
 ]
 test = [
     "fastapi",
@@ -24,7 +23,7 @@ test = [
 [project]
 name = "python-cq"
 version = "0.0.0"
-description = "Lightweight CQRS library for async Python projects."
+description = "CQRS library for async Python projects."
 license = "MIT"
 license-files = ["LICENSE"]
 readme = "README.md"
@@ -54,6 +53,7 @@ dependencies = [
 ]
 
 [project.urls]
+Documentation = "https://python-cq.remimd.dev"
 Repository = "https://github.com/100nm/python-cq"
 
 [tool.coverage.report]
@@ -104,5 +104,5 @@ extend-select = ["F", "I", "N"]
 fixable = ["ALL"]
 
 [tool.uv]
-default-groups = ["dev", "example", "test"]
+default-groups = ["dev", "docs", "test"]
 package = true

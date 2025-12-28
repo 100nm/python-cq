@@ -1,0 +1,47 @@
+site_name: python-cq
+
+repo_name: 100nm/python-cq
+repo_url: https://github.com/100nm/python-cq
+
+markdown_extensions:
+  - admonition
+  - def_list
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Guides:
+      - Messages and handlers: guides/messages.md
+      - Dispatching messages: guides/dispatching.md
+      - Configuring a bus: guides/configuring.md
+      - Executing multiple commands: guides/multiple-commands.md
+
+plugins:
+  - search
+
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    scheme: slate
+    primary: indigo
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - navigation.expand
+    - navigation.footer
+    - navigation.instant
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.suggest
