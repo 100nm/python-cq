@@ -1159,14 +1159,14 @@ wheels = [
 
 [[package]]
 name = "python-injection"
-version = "0.25.9"
+version = "0.25.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "type-analyzer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/18/c6/95cc1ad5894e3cf92975a7b3e20f36c1a0f57b45dab1d92dbfd4efc63475/python_injection-0.25.9.tar.gz", hash = "sha256:638ecf7e627e57abcacaed2c9c05ae836dcffd93de6507b698d5de8c2bf78cfb", size = 24781, upload-time = "2025-12-25T15:14:42.159Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fd/8a/e627a7dc59a4b3b06fb39498faa729c9ffae5bee218867b7c85142bd52dc/python_injection-0.25.11.tar.gz", hash = "sha256:ea1e9aee69bf70f18c17e40bdc66b6ec24d0535c8f28e4bc6643d129764e1db3", size = 24709, upload-time = "2025-12-29T16:36:34.271Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c0/a0/bdda4e5c65f720d14c86dd0861ab8e2ca73ee840143dfa56bdddb6bd53af/python_injection-0.25.9-py3-none-any.whl", hash = "sha256:e91920f3bc485926f4906fc46e34fe05b15ca2ae1d05f150e0901b246b39bf98", size = 31691, upload-time = "2025-12-25T15:14:40.89Z" },
+    { url = "https://files.pythonhosted.org/packages/69/8b/56d04a67649bd6ba6ba8cf744b63f0b19eb695616e1789a3e73a07b2668d/python_injection-0.25.11-py3-none-any.whl", hash = "sha256:27a0adf43c95698330121f070ac2aa5fa2047e4e1591d206f005bec70998e874", size = 31621, upload-time = "2025-12-29T16:36:32.999Z" },
 ]
 
 [[package]]
