@@ -1,4 +1,4 @@
-from cq import ContextCommandPipeline, ContextPipeline, command_handler
+from cq import ContextCommandPipeline, command_handler, query_handler
 from tests.helpers.history import HistoryMiddleware
 
 
@@ -11,7 +11,7 @@ class TestContextCommandPipeline:
 
         class Command2: ...
 
-        class Command3: ...
+        class Query: ...
 
         class Foo: ...
 
@@ -29,9 +29,9 @@ class TestContextCommandPipeline:
             async def handle(self, command: Command2) -> Bar:
                 return Bar()
 
-        @command_handler
-        class CommandHandler3:
-            async def handle(self, command: Command3) -> Baz:
+        @query_handler
+        class QueryHandler:
+            async def handle(self, query: Query) -> Baz:
                 return Baz()
 
         class Context:
@@ -39,17 +39,17 @@ class TestContextCommandPipeline:
             bar: Bar
             baz: Baz
 
-            pipeline: ContextPipeline[Command1] = ContextCommandPipeline()
+            pipeline: ContextCommandPipeline[Command1] = ContextCommandPipeline()
 
             @pipeline.step
             async def _(self, foo: Foo) -> Command2:
                 self.foo = foo
                 return Command2()
 
-            @pipeline.step
-            async def _(self, bar: Bar) -> Command3:
+            @pipeline.query_step
+            async def _(self, bar: Bar) -> Query:
                 self.bar = bar
-                return Command3()
+                return Query()
 
             @pipeline.step
             async def _(self, baz: Baz) -> None:

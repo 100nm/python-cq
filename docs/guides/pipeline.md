@@ -9,12 +9,12 @@ In CQRS, the saga pattern is typically used to orchestrate multiple commands. Ho
 A pipeline executes a sequence of commands, where each step transforms the result of the previous command into the next command.
 
 ```python
-from cq import ContextCommandPipeline, ContextPipeline
+from cq import ContextCommandPipeline
 
 class PaymentContext:
     transaction_id: int
 
-    pipeline: ContextPipeline[ValidateCartCommand] = ContextCommandPipeline()
+    pipeline: ContextCommandPipeline[ValidateCartCommand] = ContextCommandPipeline()
 
     @pipeline.step
     async def _(self, result: CartValidatedResult) -> CreateTransactionCommand:
@@ -35,6 +35,8 @@ The pipeline class acts as a context, allowing you to store intermediate values 
 ### Steps
 
 Each step is a method decorated with `@pipeline.step`. It receives the result of the previous command handler and returns the next command to dispatch.
+
+You can also use `@pipeline.query_step` to dispatch queries instead of commands.
 
 The last step is optional. If defined, it must return `None`.
 
