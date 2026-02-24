@@ -1,19 +1,31 @@
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Self
+from inspect import isasyncgenfunction
+from typing import Concatenate, Self, TypeGuard
 
 from cq.exceptions import MiddlewareError
 
 type MiddlewareResult[T] = AsyncGenerator[None, T]
-type Middleware[**P, T] = Callable[P, MiddlewareResult[T]]
+type GeneratorMiddleware[**P, T] = Callable[P, MiddlewareResult[T]]
+type ClassicMiddleware[**P, T] = Callable[
+    Concatenate[Callable[P, Awaitable[T]], P], Awaitable[T]
+]
+
+type Middleware[**P, T] = ClassicMiddleware[P, T] | GeneratorMiddleware[P, T]
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class MiddlewareGroup[**P, T]:
-    __middlewares: list[Middleware[P, T]] = field(default_factory=list, init=False)
+    __middlewares: list[ClassicMiddleware[P, T]] = field(
+        default_factory=list,
+        init=False,
+    )
 
     def add(self, *middlewares: Middleware[P, T]) -> Self:
-        self.__middlewares.extend(reversed(middlewares))
+        classic_middlewares = reversed(
+            tuple(self.__normalize(middleware) for middleware in middlewares)
+        )
+        self.__middlewares.extend(classic_middlewares)
         return self
 
     async def invoke(
@@ -30,40 +42,65 @@ class MiddlewareGroup[**P, T]:
         handler: Callable[P, Awaitable[T]],
     ) -> Callable[P, Awaitable[T]]:
         for middleware in self.__middlewares:
-            handler = self.__apply_middleware(handler, middleware)
+            handler = _BoundMiddleware(handler, middleware)
 
         return handler
 
-    @classmethod
-    def __apply_middleware(
-        cls,
-        handler: Callable[P, Awaitable[T]],
-        middleware: Middleware[P, T],
-    ) -> Callable[P, Awaitable[T]]:
-        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-            generator: MiddlewareResult[T] = middleware(*args, **kwargs)
-            value: T = NotImplemented
+    @staticmethod
+    def __normalize(middleware: Middleware[P, T]) -> ClassicMiddleware[P, T]:
+        if _is_gen_middleware(middleware):
+            return _GeneratorMiddleware(middleware)
 
-            try:
-                await anext(generator)
+        return middleware  # type: ignore[return-value]
 
-                while True:
-                    try:
-                        value = await handler(*args, **kwargs)
-                    except BaseException as exc:
-                        await generator.athrow(exc)
-                    else:
-                        await generator.asend(value)
-                        raise MiddlewareError(
-                            f"Too many `yield` keywords in `{middleware}`."
-                        )
 
-            except StopAsyncIteration:
-                ...
+@dataclass(repr=False, eq=False, frozen=True, slots=True)
+class _BoundMiddleware[**P, T]:
+    call_next: Callable[P, Awaitable[T]]
+    middleware: ClassicMiddleware[P, T]
 
-            finally:
-                await generator.aclose()
+    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
+        return await self.middleware(self.call_next, *args, **kwargs)
 
-            return value
 
-        return wrapper
+@dataclass(repr=False, eq=False, frozen=True, slots=True)
+class _GeneratorMiddleware[**P, T]:
+    middleware: GeneratorMiddleware[P, T]
+
+    async def __call__(
+        self,
+        call_next: Callable[P, Awaitable[T]],
+        /,
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> T:
+        generator: MiddlewareResult[T] = self.middleware(*args, **kwargs)
+        value: T = NotImplemented
+
+        try:
+            await anext(generator)
+
+            while True:
+                try:
+                    value = await call_next(*args, **kwargs)
+                except BaseException as exc:
+                    await generator.athrow(exc)
+                else:
+                    await generator.asend(value)
+                    raise MiddlewareError(
+                        f"Too many `yield` keywords in `{self.middleware}`."
+                    )
+
+        except StopAsyncIteration:
+            ...
+
+        finally:
+            await generator.aclose()
+
+        return value
+
+
+def _is_gen_middleware[**P, T](
+    middleware: Middleware[P, T],
+) -> TypeGuard[GeneratorMiddleware[P, T]]:
+    return any(map(isasyncgenfunction, (middleware, middleware.__call__)))  # type: ignore[operator]
