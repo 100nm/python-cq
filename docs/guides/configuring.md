@@ -46,6 +46,24 @@ For commands and queries, middlewares run once around the single handler. For ev
 !!! note
     The generator was chosen to keep both the input message and the return value read-only.
 
+### Classic middlewares
+
+As an alternative, classic middlewares receive `call_next` as their first argument, followed by the handler's arguments. This pattern allows you to read and modify the return value:
+```python
+from collections.abc import Awaitable, Callable
+from typing import Any
+import time
+
+async def timing_middleware(
+    call_next: Callable[[Any], Awaitable[Any]],
+    message: Any,
+) -> Any:
+    start = time.time()
+    result = await call_next(message)
+    print(f"Execution time: {time.time() - start}s")
+    return result
+```
+
 ## Class-based listeners and middlewares
 
 For more flexibility, listeners and middlewares can be defined as classes with a `__call__` method. This allows you to inject dependencies and configure their behavior.
@@ -68,4 +86,18 @@ class TimingMiddleware:
         start = time.time()
         yield
         self.metrics.record(time.time() - start)
+
+@dataclass
+class ClassicTimingMiddleware:
+    metrics: MetricsService
+
+    async def __call__(
+        self,
+        call_next: Callable[[Any], Awaitable[Any]],
+        message: Any,
+    ) -> Any:
+        start = time.time()
+        result = await call_next(message)
+        self.metrics.record(time.time() - start)
+        return result
 ```

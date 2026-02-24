@@ -1,4 +1,5 @@
-from typing import Any
+from collections.abc import Callable
+from typing import Any, Awaitable
 
 import pytest
 
@@ -94,6 +95,32 @@ class TestMiddlewareGroup:
 
         records = history.records
         assert len(records) == 2
+
+    async def test_invoke_with_classic_middleware(
+        self,
+        group: MiddlewareGroup[..., Any],
+    ) -> None:
+        before = inner = after = 0
+
+        async def handler() -> None:
+            nonlocal inner
+            inner += 1
+
+        async def classic_middleware(
+            call_next: Callable[..., Awaitable[Any]],
+            *args: Any,
+            **kwargs: Any,
+        ) -> Any:
+            nonlocal before, after
+            before += 1
+            result = await call_next(*args, **kwargs)
+            after += 1
+            return result
+
+        group.add(classic_middleware)
+        await group.invoke(handler)
+
+        assert before == inner == after == 1
 
 
 async def _exec_2_times_middleware(*args: Any, **kwargs: Any) -> MiddlewareResult[Any]:
