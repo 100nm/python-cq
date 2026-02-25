@@ -26,7 +26,7 @@ AnyCommandBus = CommandBus[Any]
 command_handler: Final[HandlerDecorator[Command, Any]] = HandlerDecorator(
     SingleHandlerRegistry(),
 )
-event_handler: Final[HandlerDecorator[Event, None]] = HandlerDecorator(
+event_handler: Final[HandlerDecorator[Event, Any]] = HandlerDecorator(
     MultipleHandlerRegistry(),
 )
 query_handler: Final[HandlerDecorator[Query, Any]] = HandlerDecorator(

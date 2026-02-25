@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, Any, Protocol, Self, overload, runtime_checkab
 import injection
 from type_analyzer import MatchingTypesConfig, iter_matching_types, matching_types
 
+from cq._core.common.typing import Decorator
+
 type HandlerType[**P, T] = type[Handler[P, T]]
 type HandlerFactory[**P, T] = Callable[..., Awaitable[Handler[P, T]]]
 
@@ -90,10 +92,6 @@ class SingleHandlerRegistry[I, O](HandlerRegistry[I, O]):
         return self
 
 
-class _Decorator(Protocol):
-    def __call__[T](self, wrapped: T, /) -> T: ...
-
-
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class HandlerDecorator[I, O]:
     registry: HandlerRegistry[I, O]
@@ -108,7 +106,7 @@ class HandlerDecorator[I, O]:
             /,
             *,
             threadsafe: bool | None = ...,
-        ) -> _Decorator: ...
+        ) -> Decorator: ...
 
         @overload
         def __call__[T](
@@ -126,7 +124,7 @@ class HandlerDecorator[I, O]:
             /,
             *,
             threadsafe: bool | None = ...,
-        ) -> _Decorator: ...
+        ) -> Decorator: ...
 
     def __call__[T](
         self,
