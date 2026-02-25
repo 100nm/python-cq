@@ -3,6 +3,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol, Self, overload
 
+from cq._core.common.typing import Decorator
 from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
 from cq._core.middleware import Middleware
 
@@ -46,13 +47,13 @@ class Pipe[I, O](BaseDispatcher[I, O]):
         ) -> PipeConverter[T, Any]: ...
 
         @overload
-        def step[T](
+        def step(
             self,
             wrapped: None = ...,
             /,
             *,
-            dispatcher: Dispatcher[T, Any] | None = ...,
-        ) -> Callable[[PipeConverter[T, Any]], PipeConverter[T, Any]]: ...
+            dispatcher: Dispatcher[Any, Any] | None = ...,
+        ) -> Decorator: ...
 
     def step[T](
         self,
@@ -163,13 +164,13 @@ class ContextPipeline[I]:
         ) -> PipeConverterMethod[T, Any]: ...
 
         @overload
-        def step[T](
+        def step(
             self,
             wrapped: None = ...,
             /,
             *,
-            dispatcher: Dispatcher[T, Any] | None = ...,
-        ) -> Callable[[PipeConverterMethod[T, Any]], PipeConverterMethod[T, Any]]: ...
+            dispatcher: Dispatcher[Any, Any] | None = ...,
+        ) -> Decorator: ...
 
     def step[T](
         self,

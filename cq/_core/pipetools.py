@@ -1,8 +1,9 @@
-from typing import TYPE_CHECKING, Any, Callable, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import injection
 
 from cq import Dispatcher
+from cq._core.common.typing import Decorator
 from cq._core.dispatcher.lazy import LazyDispatcher
 from cq._core.dispatcher.pipe import ContextPipeline, PipeConverterMethod
 from cq._core.message import AnyCommandBus, Command, Query, QueryBus
@@ -52,11 +53,7 @@ class ContextCommandPipeline[I: Command](ContextPipeline[I]):
         ) -> PipeConverterMethod[T, Any]: ...
 
         @overload
-        def query_step[T: Query](
-            self,
-            wrapped: None = ...,
-            /,
-        ) -> Callable[[PipeConverterMethod[T, Any]], PipeConverterMethod[T, Any]]: ...
+        def query_step(self, wrapped: None = ..., /) -> Decorator: ...
 
     def query_step[T: Query](
         self,
