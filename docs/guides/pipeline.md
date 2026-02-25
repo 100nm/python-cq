@@ -17,16 +17,16 @@ class PaymentContext:
     pipeline: ContextCommandPipeline[ValidateCartCommand] = ContextCommandPipeline()
 
     @pipeline.step
-    async def _(self, result: CartValidatedResult) -> CreateTransactionCommand:
+    def _(self, result: CartValidatedResult) -> CreateTransactionCommand:
         return CreateTransactionCommand(cart_id=result.cart_id, amount=result.total)
 
     @pipeline.step
-    async def _(self, result: TransactionCreatedResult) -> NotifyMerchantCommand:
+    def _(self, result: TransactionCreatedResult) -> NotifyMerchantCommand:
         self.transaction_id = result.transaction_id
         return NotifyMerchantCommand(transaction_id=self.transaction_id)
 
     @pipeline.step
-    async def _(self, result: MerchantNotifiedResult):
+    def _(self, result: MerchantNotifiedResult):
         ...
 ```
 

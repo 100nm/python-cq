@@ -42,12 +42,12 @@ class TestContextCommandPipeline:
             pipeline: ContextCommandPipeline[Command1] = ContextCommandPipeline()
 
             @pipeline.step
-            async def _(self, foo: Foo) -> Command2:
+            def _(self, foo: Foo) -> Command2:
                 self.foo = foo
                 return Command2()
 
             @pipeline.query_step
-            async def _(self, bar: Bar) -> Query:
+            def _(self, bar: Bar) -> Query:
                 self.bar = bar
                 return Query()
 

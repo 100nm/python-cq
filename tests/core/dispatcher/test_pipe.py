@@ -39,7 +39,7 @@ class TestPipe:
         pipe: Pipe[str, str | tuple[str, ...]] = Pipe(bus)
 
         @pipe.step
-        async def step_converter_1(length: int) -> int:
+        def step_converter_1(length: int) -> int:
             return length
 
         assert await pipe.dispatch("hello") == "*****"
