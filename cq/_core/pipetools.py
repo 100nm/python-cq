@@ -5,7 +5,12 @@ import injection
 from cq import Dispatcher
 from cq._core.common.typing import Decorator
 from cq._core.dispatcher.lazy import LazyDispatcher
-from cq._core.dispatcher.pipe import ContextPipeline, PipeConverterMethod
+from cq._core.dispatcher.pipe import (
+    ContextPipeline,
+    ConvertMethod,
+    ConvertMethodAsync,
+    ConvertMethodSync,
+)
 from cq._core.message import AnyCommandBus, Command, Query, QueryBus
 from cq._core.scope import CQScope
 from cq.middlewares.scope import InjectionScopeMiddleware
@@ -48,16 +53,23 @@ class ContextCommandPipeline[I: Command](ContextPipeline[I]):
         @overload
         def query_step[T: Query](
             self,
-            wrapped: PipeConverterMethod[T, Any],
+            wrapped: ConvertMethodAsync[T, Any],
             /,
-        ) -> PipeConverterMethod[T, Any]: ...
+        ) -> ConvertMethodAsync[T, Any]: ...
+
+        @overload
+        def query_step[T: Query](
+            self,
+            wrapped: ConvertMethodSync[T, Any],
+            /,
+        ) -> ConvertMethodSync[T, Any]: ...
 
         @overload
         def query_step(self, wrapped: None = ..., /) -> Decorator: ...
 
-    def query_step[T: Query](
+    def query_step[T: Query](  # type: ignore[misc]
         self,
-        wrapped: PipeConverterMethod[T, Any] | None = None,
+        wrapped: ConvertMethod[T, Any] | None = None,
         /,
     ) -> Any:
         return self.step(wrapped, dispatcher=self.__query_dispatcher)

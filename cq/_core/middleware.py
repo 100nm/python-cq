@@ -59,7 +59,7 @@ class _BoundMiddleware[**P, T]:
     call_next: Callable[P, Awaitable[T]]
     middleware: ClassicMiddleware[P, T]
 
-    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
+    async def __call__(self, /, *args: P.args, **kwargs: P.kwargs) -> T:
         return await self.middleware(self.call_next, *args, **kwargs)
 
 
