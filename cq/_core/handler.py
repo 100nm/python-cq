@@ -21,8 +21,19 @@ class Handler[**P, T](Protocol):
     __slots__ = ()
 
     @abstractmethod
-    async def handle(self, *args: P.args, **kwargs: P.kwargs) -> T:
+    async def handle(self, /, *args: P.args, **kwargs: P.kwargs) -> T:
         raise NotImplementedError
+
+
+@dataclass(repr=False, eq=False, frozen=True, slots=True)
+class HandleFunction[**P, T]:
+    handler_factory: HandlerFactory[P, T]
+    handler_type: HandlerType[P, T] | None = field(default=None)
+    fail_silently: bool = field(default=False)
+
+    async def __call__(self, /, *args: P.args, **kwargs: P.kwargs) -> T:
+        handler = await self.handler_factory()
+        return await handler.handle(*args, **kwargs)
 
 
 @runtime_checkable
@@ -30,65 +41,76 @@ class HandlerRegistry[I, O](Protocol):
     __slots__ = ()
 
     @abstractmethod
-    def handlers_from(
-        self,
-        input_type: type[I],
-    ) -> Iterator[Callable[[I], Awaitable[O]]]:
+    def handlers_from(self, input_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
         raise NotImplementedError
 
     @abstractmethod
-    def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
+    def subscribe(
+        self,
+        input_type: type[I],
+        handler_factory: HandlerFactory[[I], O],
+        handler_type: HandlerType[[I], O] | None = ...,
+        fail_silently: bool = ...,
+    ) -> Self:
         raise NotImplementedError
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class MultipleHandlerRegistry[I, O](HandlerRegistry[I, O]):
-    __factories: dict[type[I], list[HandlerFactory[[I], O]]] = field(
+    __values: dict[type[I], list[HandleFunction[[I], O]]] = field(
         default_factory=partial(defaultdict, list),
         init=False,
     )
 
-    def handlers_from(
+    def handlers_from(self, input_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
+        for key_type in _iter_key_types(input_type):
+            yield from self.__values.get(key_type, ())
+
+    def subscribe(
         self,
         input_type: type[I],
-    ) -> Iterator[Callable[[I], Awaitable[O]]]:
-        for key_type in _iter_key_types(input_type):
-            for factory in self.__factories.get(key_type, ()):
-                yield _make_handle_function(factory)
+        handler_factory: HandlerFactory[[I], O],
+        handler_type: HandlerType[[I], O] | None = None,
+        fail_silently: bool = False,
+    ) -> Self:
+        function = HandleFunction(handler_factory, handler_type, fail_silently)
 
-    def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
         for key_type in _build_key_types(input_type):
-            self.__factories[key_type].append(factory)
+            self.__values[key_type].append(function)
 
         return self
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class SingleHandlerRegistry[I, O](HandlerRegistry[I, O]):
-    __factories: dict[type[I], HandlerFactory[[I], O]] = field(
+    __values: dict[type[I], HandleFunction[[I], O]] = field(
         default_factory=dict,
         init=False,
     )
 
-    def handlers_from(
+    def handlers_from(self, input_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
+        for key_type in _iter_key_types(input_type):
+            function = self.__values.get(key_type, None)
+            if function is not None:
+                yield function
+
+    def subscribe(
         self,
         input_type: type[I],
-    ) -> Iterator[Callable[[I], Awaitable[O]]]:
-        for key_type in _iter_key_types(input_type):
-            factory = self.__factories.get(key_type, None)
-            if factory is not None:
-                yield _make_handle_function(factory)
-
-    def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
-        entries = {key_type: factory for key_type in _build_key_types(input_type)}
+        handler_factory: HandlerFactory[[I], O],
+        handler_type: HandlerType[[I], O] | None = None,
+        fail_silently: bool = False,
+    ) -> Self:
+        function = HandleFunction(handler_factory, handler_type, fail_silently)
+        entries = {key_type: function for key_type in _build_key_types(input_type)}
 
         for key_type in entries:
-            if key_type in self.__factories:
+            if key_type in self.__values:
                 raise RuntimeError(
                     f"A handler is already registered for the input type: `{key_type}`."
                 )
 
-        self.__factories.update(entries)
+        self.__values.update(entries)
         return self
 
 
@@ -105,6 +127,7 @@ class HandlerDecorator[I, O]:
             input_or_handler_type: type[I],
             /,
             *,
+            fail_silently: bool = ...,
             threadsafe: bool | None = ...,
         ) -> Decorator: ...
 
@@ -114,6 +137,7 @@ class HandlerDecorator[I, O]:
             input_or_handler_type: T,
             /,
             *,
+            fail_silently: bool = ...,
             threadsafe: bool | None = ...,
         ) -> T: ...
 
@@ -123,6 +147,7 @@ class HandlerDecorator[I, O]:
             input_or_handler_type: None = ...,
             /,
             *,
+            fail_silently: bool = ...,
             threadsafe: bool | None = ...,
         ) -> Decorator: ...
 
@@ -131,6 +156,7 @@ class HandlerDecorator[I, O]:
         input_or_handler_type: type[I] | T | None = None,
         /,
         *,
+        fail_silently: bool = False,
         threadsafe: bool | None = None,
     ) -> Any:
         if (
@@ -138,11 +164,16 @@ class HandlerDecorator[I, O]:
             and isclass(input_or_handler_type)
             and issubclass(input_or_handler_type, Handler)
         ):
-            return self.__decorator(input_or_handler_type, threadsafe=threadsafe)
+            return self.__decorator(
+                input_or_handler_type,
+                fail_silently=fail_silently,
+                threadsafe=threadsafe,
+            )
 
         return partial(
             self.__decorator,
             input_type=input_or_handler_type,  # type: ignore[arg-type]
+            fail_silently=fail_silently,
             threadsafe=threadsafe,
         )
 
@@ -152,11 +183,12 @@ class HandlerDecorator[I, O]:
         /,
         *,
         input_type: type[I] | None = None,
+        fail_silently: bool = False,
         threadsafe: bool | None = None,
     ) -> HandlerType[[I], O]:
         factory = self.injection_module.make_async_factory(wrapped, threadsafe)
         input_type = input_type or _resolve_input_type(wrapped)
-        self.registry.subscribe(input_type, factory)
+        self.registry.subscribe(input_type, factory, wrapped, fail_silently)
         return wrapped
 
 
@@ -190,14 +222,3 @@ def _resolve_input_type[I, O](handler_type: HandlerType[[I], O]) -> type[I]:
         f"Unable to resolve input type for handler `{handler_type}`, "
         "`handle` method must have a type annotation for its first parameter."
     )
-
-
-def _make_handle_function[I, O](
-    factory: HandlerFactory[[I], O],
-) -> Callable[[I], Awaitable[O]]:
-    return partial(__handle, factory=factory)
-
-
-async def __handle[I, O](input_value: I, *, factory: HandlerFactory[[I], O]) -> O:
-    handler = await factory()
-    return await handler.handle(input_value)

@@ -7,6 +7,7 @@ from anyio.abc import TaskGroup
 
 from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
 from cq._core.handler import (
+    HandleFunction,
     HandlerFactory,
     HandlerRegistry,
     MultipleHandlerRegistry,
@@ -53,10 +54,7 @@ class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
         self.__registry.subscribe(input_type, factory)
         return self
 
-    def _handlers_from(
-        self,
-        input_type: type[I],
-    ) -> Iterator[Callable[[I], Awaitable[O]]]:
+    def _handlers_from(self, input_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
         return self.__registry.handlers_from(input_type)
 
     def _trigger_listeners(self, input_value: I, /, task_group: TaskGroup) -> None:
@@ -75,7 +73,11 @@ class SimpleBus[I, O](BaseBus[I, O]):
             self._trigger_listeners(input_value, task_group)
 
         for handler in self._handlers_from(type(input_value)):
-            return await self._invoke_with_middlewares(handler, input_value)
+            return await self._invoke_with_middlewares(
+                handler,
+                input_value,
+                handler.fail_silently,
+            )
 
         return NotImplemented
 
@@ -95,4 +97,5 @@ class TaskBus[I](BaseBus[I, None]):
                     self._invoke_with_middlewares,
                     handler,
                     input_value,
+                    handler.fail_silently,
                 )

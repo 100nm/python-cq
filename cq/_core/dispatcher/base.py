@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
+from contextlib import AsyncExitStack, suppress
 from typing import Protocol, Self, runtime_checkable
 
 from cq._core.middleware import Middleware, MiddlewareGroup
@@ -40,5 +41,12 @@ class BaseDispatcher[I, O](Dispatcher[I, O], ABC):
         handler: Callable[[I], Awaitable[O]],
         input_value: I,
         /,
+        fail_silently: bool = False,
     ) -> O:
-        return await self.__middleware_group.invoke(handler, input_value)
+        async with AsyncExitStack() as stack:
+            if fail_silently:
+                stack.enter_context(suppress(Exception))
+
+            return await self.__middleware_group.invoke(handler, input_value)
+
+        return NotImplemented
