@@ -19,7 +19,7 @@ class InjectionScopeMiddleware:
     exist_ok: bool = field(default=False, kw_only=True)
     threadsafe: bool | None = field(default=None, kw_only=True)
 
-    async def __call__(self, *args: Any, **kwargs: Any) -> MiddlewareResult[Any]:
+    async def __call__(self, /, *args: Any, **kwargs: Any) -> MiddlewareResult[Any]:
         async with AsyncExitStack() as stack:
             try:
                 await stack.enter_async_context(

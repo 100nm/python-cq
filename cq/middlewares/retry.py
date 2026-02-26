@@ -25,7 +25,7 @@ class RetryMiddleware:
         self.__exceptions = tuple(exceptions)
         self.__retry = retry
 
-    async def __call__(self, *args: Any, **kwargs: Any) -> MiddlewareResult[Any]:
+    async def __call__(self, /, *args: Any, **kwargs: Any) -> MiddlewareResult[Any]:
         retry = self.__retry
 
         for attempt in range(1, retry + 1):

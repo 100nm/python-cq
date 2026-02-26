@@ -142,3 +142,19 @@ class TrackUserCreatedHandler(NamedTuple):
     async def handle(self, event: UserCreatedEvent):
         ...
 ```
+
+### fail_silently
+
+The `fail_silently` option suppresses any exception raised by the handler instead of propagating it to the caller. Exceptions can still be caught and handled by middlewares before being suppressed.
+
+This is particularly useful for non-critical event handlers where a failure should not affect the rest of the system:
+
+```python
+@event_handler(fail_silently=True)
+class TrackUserCreatedHandler(NamedTuple):
+    analytics: AnalyticsService
+
+    async def handle(self, event: UserCreatedEvent):
+        # An exception here won't propagate to the caller
+        ...
+```
