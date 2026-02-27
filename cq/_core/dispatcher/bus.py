@@ -31,7 +31,12 @@ class Bus[I, O](Dispatcher[I, O], Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
+    def subscribe(
+        self,
+        input_type: type[I],
+        factory: HandlerFactory[[I], O],
+        fail_silently: bool = ...,
+    ) -> Self:
         raise NotImplementedError
 
 
@@ -50,8 +55,13 @@ class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
         self.__listeners.extend(listeners)
         return self
 
-    def subscribe(self, input_type: type[I], factory: HandlerFactory[[I], O]) -> Self:
-        self.__registry.subscribe(input_type, factory)
+    def subscribe(
+        self,
+        input_type: type[I],
+        factory: HandlerFactory[[I], O],
+        fail_silently: bool = False,
+    ) -> Self:
+        self.__registry.subscribe(input_type, factory, fail_silently=fail_silently)
         return self
 
     def _handlers_from(self, input_type: type[I]) -> Iterator[HandleFunction[[I], O]]:

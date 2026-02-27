@@ -3,7 +3,7 @@ from collections import defaultdict
 from collections.abc import Awaitable, Callable, Iterator
 from dataclasses import dataclass, field
 from functools import partial
-from inspect import Parameter, isclass
+from inspect import Parameter, isclass, unwrap
 from inspect import signature as inspect_signature
 from typing import TYPE_CHECKING, Any, Protocol, Self, overload, runtime_checkable
 
@@ -27,13 +27,22 @@ class Handler[**P, T](Protocol):
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class HandleFunction[**P, T]:
-    handler_factory: HandlerFactory[P, T]
-    handler_type: HandlerType[P, T] | None = field(default=None)
-    fail_silently: bool = field(default=False)
+    factory: HandlerFactory[P, T]
+    source: HandlerType[P, T] | Any
+    fail_silently: bool
 
     async def __call__(self, /, *args: P.args, **kwargs: P.kwargs) -> T:
-        handler = await self.handler_factory()
+        handler = await self.factory()
         return await handler.handle(*args, **kwargs)
+
+    @classmethod
+    def create(
+        cls,
+        factory: HandlerFactory[P, T],
+        source: HandlerType[P, T] | None = None,
+        fail_silently: bool = False,
+    ) -> Self:
+        return cls(factory, source or unwrap(factory), fail_silently)
 
 
 @runtime_checkable
@@ -73,7 +82,7 @@ class MultipleHandlerRegistry[I, O](HandlerRegistry[I, O]):
         handler_type: HandlerType[[I], O] | None = None,
         fail_silently: bool = False,
     ) -> Self:
-        function = HandleFunction(handler_factory, handler_type, fail_silently)
+        function = HandleFunction.create(handler_factory, handler_type, fail_silently)
 
         for key_type in _build_key_types(input_type):
             self.__values[key_type].append(function)
@@ -101,7 +110,7 @@ class SingleHandlerRegistry[I, O](HandlerRegistry[I, O]):
         handler_type: HandlerType[[I], O] | None = None,
         fail_silently: bool = False,
     ) -> Self:
-        function = HandleFunction(handler_factory, handler_type, fail_silently)
+        function = HandleFunction.create(handler_factory, handler_type, fail_silently)
         entries = {key_type: function for key_type in _build_key_types(input_type)}
 
         for key_type in entries:
