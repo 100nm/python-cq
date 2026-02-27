@@ -3,9 +3,40 @@ from typing import Any, Awaitable
 
 import pytest
 
-from cq._core.middleware import MiddlewareGroup, MiddlewareResult
+from cq._core.dispatcher.bus import SimpleBus
+from cq._core.handler import HandlerDecorator, SingleHandlerRegistry
+from cq._core.middleware import (
+    MiddlewareGroup,
+    MiddlewareResult,
+    resolve_handler_source,
+)
 from cq.exceptions import MiddlewareError
 from tests.helpers.history import HistoryMiddleware
+
+
+async def test_resolve_handler_source_with_success() -> None:
+    registry = SingleHandlerRegistry[Any, Any]()
+    handler = HandlerDecorator(registry)
+
+    @handler
+    class Handler:
+        async def handle(self, message: str) -> None: ...
+
+    expected: Any = None
+
+    async def middleware(
+        call_next: Callable[[Any], Awaitable[Any]],
+        message: Any,
+    ) -> Any:
+        nonlocal expected
+        expected = resolve_handler_source(call_next)
+        return await call_next(message)
+
+    bus = SimpleBus(registry)
+    bus.add_middlewares(middleware)
+    await bus.dispatch("hello")
+
+    assert expected is Handler
 
 
 class TestMiddlewareGroup:

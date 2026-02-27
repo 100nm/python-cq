@@ -1,8 +1,9 @@
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from dataclasses import dataclass, field
 from inspect import isasyncgenfunction
-from typing import Concatenate, Self, TypeGuard
+from typing import Any, Concatenate, Self, TypeGuard
 
+from cq._core.handler import HandleFunction, HandlerType
 from cq.exceptions import MiddlewareError
 
 type MiddlewareResult[T] = AsyncGenerator[None, T]
@@ -61,6 +62,19 @@ class _BoundMiddleware[**P, T]:
 
     async def __call__(self, /, *args: P.args, **kwargs: P.kwargs) -> T:
         return await self.middleware(self.call_next, *args, **kwargs)
+
+
+def resolve_handler_source[**P, T](
+    call_next: Callable[P, Awaitable[T]]
+    | _BoundMiddleware[P, T]
+    | HandleFunction[P, T],
+    /,
+) -> HandlerType[P, T] | Any:
+    while True:
+        try:
+            call_next = call_next.call_next  # type: ignore[union-attr]
+        except AttributeError:
+            return call_next.source  # type: ignore[union-attr]
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
