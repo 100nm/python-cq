@@ -152,25 +152,30 @@ class ContextPipeline[I]:
     if TYPE_CHECKING:  # pragma: no cover
 
         @overload
-        def __get__[O](self, instance: None, owner: type[O], /) -> Dispatcher[I, O]: ...
+        def __get__[Context](
+            self,
+            instance: None,
+            owner: type[Context],
+            /,
+        ) -> Dispatcher[I, Context]: ...
 
         @overload
-        def __get__[O](
+        def __get__[Context](
             self,
-            instance: O,
-            owner: type[O] | None = ...,
+            instance: Context,
+            owner: type[Context] | None = ...,
             /,
-        ) -> Dispatcher[I, O]: ...
+        ) -> Dispatcher[I, Context]: ...
 
         @overload
         def __get__(self, instance: None = ..., owner: None = ..., /) -> Self: ...
 
-    def __get__[O](
+    def __get__[Context](
         self,
-        instance: O | None = None,
-        owner: type[O] | None = None,
+        instance: Context | None = None,
+        owner: type[Context] | None = None,
         /,
-    ) -> Self | Dispatcher[I, O]:
+    ) -> Self | Dispatcher[I, Context]:
         if instance is None:
             if owner is None:
                 return self
@@ -231,19 +236,19 @@ class ContextPipeline[I]:
 
         return decorator(wrapped) if wrapped else decorator
 
-    async def __execute[O](
+    async def __execute[Context](
         self,
         input_value: I,
         /,
         *,
-        context: O,
-        context_type: type[O] | None,
-    ) -> O:
-        await self.__middleware_group.invoke(
-            lambda i: self.__steps.execute(i, context, context_type),
-            input_value,
-        )
-        return context
+        context: Context,
+        context_type: type[Context] | None,
+    ) -> Context:
+        async def handler(i: I, /) -> Context:
+            await self.__steps.execute(i, context, context_type)
+            return context
+
+        return await self.__middleware_group.invoke(handler, input_value)
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
