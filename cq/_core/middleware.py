@@ -9,7 +9,8 @@ from cq.exceptions import MiddlewareError
 type MiddlewareResult[T] = AsyncGenerator[None, T]
 type GeneratorMiddleware[**P, T] = Callable[P, MiddlewareResult[T]]
 type ClassicMiddleware[**P, T] = Callable[
-    Concatenate[Callable[P, Awaitable[T]], P], Awaitable[T]
+    Concatenate[Callable[P, Awaitable[T]], P],
+    Awaitable[T],
 ]
 
 type Middleware[**P, T] = ClassicMiddleware[P, T] | GeneratorMiddleware[P, T]

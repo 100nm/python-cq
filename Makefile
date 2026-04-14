@@ -1,11 +1,11 @@
 before_commit: lint mypy pytest
 
 install:
-	uv sync
+	uv sync --all-extras
 
 update:
 	uv lock --upgrade
-	uv sync
+	uv sync --all-extras
 
 lint:
 	uv run ruff format

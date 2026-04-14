@@ -4,9 +4,16 @@ from typing import Any
 import pytest
 from injection.testing import load_test_profile, set_test_constant
 
-from cq import Bus, CommandBus, EventBus, QueryBus
+from cq import (
+    Bus,
+    CommandBus,
+    EventBus,
+    QueryBus,
+    new_command_bus,
+    new_event_bus,
+    new_query_bus,
+)
 from cq._core.dispatcher.bus import SimpleBus
-from cq._core.message import new_command_bus, new_event_bus, new_query_bus
 from tests.helpers.history import HistoryMiddleware
 
 

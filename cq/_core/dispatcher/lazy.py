@@ -1,28 +1,24 @@
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from types import GenericAlias
 from typing import TypeAliasType
 
-import injection
-
+from cq._core.di import DIAdapter
 from cq._core.dispatcher.base import Dispatcher
 
 
 class LazyDispatcher[I, O](Dispatcher[I, O]):
-    __slots__ = ("__value",)
+    __slots__ = ("__resolve",)
 
-    __value: Awaitable[Dispatcher[I, O]]
+    __resolve: Callable[[], Awaitable[Dispatcher[I, O]]]
 
     def __init__(
         self,
         dispatcher_type: type[Dispatcher[I, O]] | TypeAliasType | GenericAlias,
         /,
-        *,
-        injection_module: injection.Module | None = None,
-        threadsafe: bool | None = None,
+        di: DIAdapter,
     ) -> None:
-        module = injection_module or injection.mod()
-        self.__value = module.aget_lazy_instance(dispatcher_type, threadsafe=threadsafe)
+        self.__resolve = di.lazy(dispatcher_type)  # type: ignore[arg-type]
 
     async def dispatch(self, input_value: I, /) -> O:
-        dispatcher = await self.__value
+        dispatcher = await self.__resolve()
         return await dispatcher.dispatch(input_value)

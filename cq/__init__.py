@@ -1,6 +1,8 @@
-from ._core.dispatcher.base import DeferredDispatcher, Dispatcher
+from ._core.cq import CQ
+from ._core.di import DIAdapter
+from ._core.di import NoDI as _NoDI
+from ._core.dispatcher.base import Dispatcher
 from ._core.dispatcher.bus import Bus
-from ._core.dispatcher.lazy import LazyDispatcher
 from ._core.dispatcher.pipe import ContextPipeline, Pipe
 from ._core.message import (
     AnyCommandBus,
@@ -10,31 +12,24 @@ from ._core.message import (
     EventBus,
     Query,
     QueryBus,
-    command_handler,
-    event_handler,
-    new_command_bus,
-    new_event_bus,
-    new_query_bus,
-    query_handler,
 )
 from ._core.middleware import Middleware, MiddlewareResult, resolve_handler_source
-from ._core.pipetools import ContextCommandPipeline
-from ._core.related_events import RelatedEvents
-from ._core.scope import CQScope
+from ._core.pipetools import ContextCommandPipeline as _ContextCommandPipeline
+from ._core.related_events import AnyIORelatedEvents, RelatedEvents
 
 __all__ = (
     "AnyCommandBus",
+    "AnyIORelatedEvents",
     "Bus",
-    "CQScope",
+    "CQ",
     "Command",
     "CommandBus",
     "ContextCommandPipeline",
     "ContextPipeline",
-    "DeferredDispatcher",
+    "DIAdapter",
     "Dispatcher",
     "Event",
     "EventBus",
-    "LazyDispatcher",
     "Middleware",
     "MiddlewareResult",
     "Pipe",
@@ -49,3 +44,32 @@ __all__ = (
     "query_handler",
     "resolve_handler_source",
 )
+
+try:
+    from cq.ext.injection import InjectionAdapter as _InjectionAdapter
+
+except ImportError:  # pragma: no cover
+    _default = CQ(_NoDI())
+
+else:
+    _default = CQ(_InjectionAdapter())
+
+_default.register_defaults()
+
+command_handler = _default.command_handler
+event_handler = _default.event_handler
+query_handler = _default.query_handler
+
+new_command_bus = _default.new_command_bus
+new_event_bus = _default.new_event_bus
+new_query_bus = _default.new_query_bus
+
+
+class ContextCommandPipeline[C: Command](_ContextCommandPipeline[C]):
+    __slots__ = ()
+
+    def __init__(self, di: DIAdapter = _default.di) -> None:
+        super().__init__(di)
+
+
+del _default
