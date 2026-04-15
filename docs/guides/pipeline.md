@@ -15,6 +15,7 @@ class PaymentContext:
     transaction_id: int
 
     pipeline: ContextCommandPipeline[ValidateCartCommand] = ContextCommandPipeline()
+    # Optionally pass a custom DIAdapter: ContextCommandPipeline(my_di)
 
     @pipeline.step
     def _(self, result: CartValidatedResult) -> CreateTransactionCommand:

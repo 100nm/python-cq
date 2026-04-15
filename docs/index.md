@@ -3,7 +3,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/python-cq.svg?color=4051b5&style=for-the-badge)](https://pypi.org/project/python-cq)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/python-cq.svg?color=4051b5&style=for-the-badge)](https://pypistats.org/packages/python-cq)
 
-**python-cq** is a Python package designed to organize your code following CQRS principles. It builds on top of [python-injection](https://github.com/100nm/python-injection) for dependency injection.
+**python-cq** is a Python package designed to organize your code following CQRS principles. It provides a `DIAdapter` protocol for dependency injection, with [python-injection](https://github.com/100nm/python-injection) as the default implementation available via the `[injection]` extra.
 
 ## What is CQRS?
 
@@ -35,6 +35,13 @@ This knowledge will help you design coherent handlers and organize your code eff
 ## Installation
 
 Requires Python 3.12 or higher.
+
+Without dependency injection:
 ```bash
 pip install python-cq
+```
+
+With [python-injection](https://github.com/100nm/python-injection) as the DI backend (recommended):
+```bash
+pip install "python-cq[injection]"
 ```
