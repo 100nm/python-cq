@@ -7,11 +7,18 @@
 
 Documentation: https://python-cq.remimd.dev
 
-Python package designed to organize your code following CQRS principles. It builds on top of [python-injection](https://github.com/100nm/python-injection) for dependency injection.
+**python-cq** is a Python package designed to organize your code following CQRS principles. It provides a `DIAdapter` protocol for dependency injection, with [python-injection](https://github.com/100nm/python-injection) as the default implementation available via the `[injection]` extra.
 
 ## Installation
 
 ⚠️ _Requires Python 3.12 or higher_
+
+Without dependency injection:
 ```bash
 pip install python-cq
+```
+
+With [python-injection](https://github.com/100nm/python-injection) as the DI backend (recommended):
+```bash
+pip install "python-cq[injection]"
 ```

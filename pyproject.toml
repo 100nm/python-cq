@@ -13,8 +13,6 @@ docs = [
     "mkdocs-material",
 ]
 test = [
-    "fastapi",
-    "httpx",
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
@@ -48,8 +46,12 @@ classifiers = [
 ]
 dependencies = [
     "anyio",
-    "python-injection",
     "type-analyzer",
+]
+
+[project.optional-dependencies]
+injection = [
+    "python-injection[async]",
 ]
 
 [project.urls]

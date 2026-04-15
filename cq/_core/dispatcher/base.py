@@ -15,15 +15,6 @@ class Dispatcher[I, O](Protocol):
         raise NotImplementedError
 
 
-@runtime_checkable
-class DeferredDispatcher[I](Protocol):
-    __slots__ = ()
-
-    @abstractmethod
-    async def defer(self, input_value: I, /) -> None:
-        raise NotImplementedError
-
-
 class BaseDispatcher[I, O](Dispatcher[I, O], ABC):
     __slots__ = ("__middleware_group",)
 

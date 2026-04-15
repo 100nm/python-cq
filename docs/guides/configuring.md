@@ -1,5 +1,8 @@
 # Configuring a Bus
 
+!!! note
+    This guide assumes the `[injection]` extra is installed.
+
 Each bus can be customized with listeners and middlewares. To do so, create a factory function decorated with `@injectable` that returns the configured bus.
 ```python
 from cq import CommandBus, MiddlewareResult, new_command_bus

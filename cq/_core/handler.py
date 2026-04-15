@@ -7,10 +7,10 @@ from inspect import Parameter, isclass, unwrap
 from inspect import signature as inspect_signature
 from typing import TYPE_CHECKING, Any, Protocol, Self, overload, runtime_checkable
 
-import injection
 from type_analyzer import MatchingTypesConfig, iter_matching_types, matching_types
 
 from cq._core.common.typing import Decorator
+from cq._core.di import DIAdapter, NoDI
 
 type HandlerType[**P, T] = type[Handler[P, T]]
 type HandlerFactory[**P, T] = Callable[..., Awaitable[Handler[P, T]]]
@@ -126,7 +126,7 @@ class SingleHandlerRegistry[I, O](HandlerRegistry[I, O]):
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class HandlerDecorator[I, O]:
     registry: HandlerRegistry[I, O]
-    injection_module: injection.Module = field(default_factory=injection.mod)
+    di: DIAdapter = field(default_factory=NoDI)
 
     if TYPE_CHECKING:  # pragma: no cover
 
@@ -137,7 +137,6 @@ class HandlerDecorator[I, O]:
             /,
             *,
             fail_silently: bool = ...,
-            threadsafe: bool | None = ...,
         ) -> Decorator: ...
 
         @overload
@@ -147,7 +146,6 @@ class HandlerDecorator[I, O]:
             /,
             *,
             fail_silently: bool = ...,
-            threadsafe: bool | None = ...,
         ) -> T: ...
 
         @overload
@@ -157,7 +155,6 @@ class HandlerDecorator[I, O]:
             /,
             *,
             fail_silently: bool = ...,
-            threadsafe: bool | None = ...,
         ) -> Decorator: ...
 
     def __call__[T](
@@ -166,7 +163,6 @@ class HandlerDecorator[I, O]:
         /,
         *,
         fail_silently: bool = False,
-        threadsafe: bool | None = None,
     ) -> Any:
         if (
             input_or_handler_type is not None
@@ -176,14 +172,12 @@ class HandlerDecorator[I, O]:
             return self.__decorator(
                 input_or_handler_type,
                 fail_silently=fail_silently,
-                threadsafe=threadsafe,
             )
 
         return partial(
             self.__decorator,
             input_type=input_or_handler_type,  # type: ignore[arg-type]
             fail_silently=fail_silently,
-            threadsafe=threadsafe,
         )
 
     def __decorator(
@@ -193,9 +187,8 @@ class HandlerDecorator[I, O]:
         *,
         input_type: type[I] | None = None,
         fail_silently: bool = False,
-        threadsafe: bool | None = None,
     ) -> HandlerType[[I], O]:
-        factory = self.injection_module.make_async_factory(wrapped, threadsafe)
+        factory = self.di.wire(wrapped)
         input_type = input_type or _resolve_input_type(wrapped)
         self.registry.subscribe(input_type, factory, wrapped, fail_silently)
         return wrapped

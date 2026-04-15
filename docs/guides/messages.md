@@ -30,7 +30,7 @@ class CreateUserHandler:
         ...
 ```
 
-All constructor dependencies are resolved at runtime by [python-injection](https://github.com/100nm/python-injection).
+All constructor dependencies are resolved at runtime by the configured DI adapter.
 
 ### Using NamedTuple for handlers
 

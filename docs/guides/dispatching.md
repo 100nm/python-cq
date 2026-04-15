@@ -6,7 +6,7 @@ Each bus can take a generic parameter to specify the return type of the `dispatc
 
 ## Retrieving a bus
 
-Bus instances are available through [python-injection](https://github.com/100nm/python-injection)'s dependency injection:
+Bus instances are resolved through the configured DI adapter. When using the `[injection]` extra:
 
 ```python
 from cq import CommandBus
