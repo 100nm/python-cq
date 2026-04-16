@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from dataclasses import dataclass, field
 from types import TracebackType
-from typing import Any, Protocol, Self, runtime_checkable
+from typing import Protocol, Self, runtime_checkable
 
 from anyio import create_task_group
 from anyio.abc import TaskGroup
@@ -36,8 +36,8 @@ class AnyIORelatedEvents(RelatedEvents):
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
         traceback: TracebackType | None,
-    ) -> Any:
-        return await self.task_group.__aexit__(exc_type, exc_value, traceback)
+    ) -> None:
+        await self.task_group.__aexit__(None, None, None)
 
     def add(self, *events: Event) -> None:
         self.history.extend(events)
