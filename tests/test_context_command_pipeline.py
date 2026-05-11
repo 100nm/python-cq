@@ -1,12 +1,15 @@
-from cq import ContextCommandPipeline, command_handler, query_handler
+from cq import CQ, ContextCommandPipeline
 from tests.helpers.history import HistoryMiddleware
 
 
 class TestContextCommandPipeline:
     async def test_dispatch_with_success_return_any(
         self,
+        cq: CQ,
         history: HistoryMiddleware,
     ) -> None:
+        class Command0: ...
+
         class Command1: ...
 
         class Command2: ...
@@ -19,17 +22,22 @@ class TestContextCommandPipeline:
 
         class Baz: ...
 
-        @command_handler
+        @cq.command_handler
+        class CommandHandler0:
+            async def handle(self, command: Command0) -> None:
+                return
+
+        @cq.command_handler
         class CommandHandler1:
             async def handle(self, command: Command1) -> Foo:
                 return Foo()
 
-        @command_handler
+        @cq.command_handler
         class CommandHandler2:
             async def handle(self, command: Command2) -> Bar:
                 return Bar()
 
-        @query_handler
+        @cq.query_handler
         class QueryHandler:
             async def handle(self, query: Query) -> Baz:
                 return Baz()
@@ -39,7 +47,9 @@ class TestContextCommandPipeline:
             bar: Bar
             baz: Baz
 
-            pipeline: ContextCommandPipeline[Command1] = ContextCommandPipeline()
+            pipeline: ContextCommandPipeline[Command0] = ContextCommandPipeline(cq.di)
+
+            pipeline.add_static_step(Command1())
 
             @pipeline.step
             def _(self, foo: Foo) -> Command2:
@@ -55,11 +65,11 @@ class TestContextCommandPipeline:
             async def _(self, baz: Baz) -> None:
                 self.baz = baz
 
-        cmd = Command1()
-        ctx = await Context.pipeline.dispatch(cmd)
+        cmd = Command0()
+        ctx = await Context.pipeline(cmd)
 
         assert isinstance(ctx, Context)
         assert isinstance(ctx.foo, Foo)
         assert isinstance(ctx.bar, Bar)
         assert isinstance(ctx.baz, Baz)
-        assert len(history.records) == 3
+        assert len(history.records) == 4
