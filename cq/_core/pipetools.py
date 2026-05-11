@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, Self, overload
 
 from cq import Dispatcher
 from cq._core.common.typing import Decorator
@@ -24,6 +24,9 @@ class ContextCommandPipeline[C: Command](ContextPipeline[C]):
         self.__query_dispatcher = LazyDispatcher(QueryBus, di)
         command_middleware = CommandDispatchScopeMiddleware(di)
         self.add_middlewares(command_middleware)
+
+    def add_static_query_step[Q: Query](self, query: Q, /) -> Self:
+        return self.add_static_step(query, dispatcher=self.__query_dispatcher)
 
     if TYPE_CHECKING:  # pragma: no cover
 

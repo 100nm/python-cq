@@ -54,6 +54,15 @@ class PipelineSteps[**P, I, O]:
         self.__steps.append(PipelineStep(converter, dispatcher))
         return self
 
+    def add_static[T](
+        self,
+        input_value: T,
+        dispatcher: Dispatcher[T, Any] | None,
+    ) -> Self:
+        converter = _StaticPipelineConverter(input_value)
+        self.add(converter, dispatcher)  # type: ignore[arg-type]
+        return self
+
     async def execute(self, input_value: I, /, *args: P.args, **kwargs: P.kwargs) -> O:
         dispatcher = self.default_dispatcher
 
@@ -128,11 +137,10 @@ class Pipe[I, O](BaseDispatcher[I, O]):
     def add_static_step[T](
         self,
         input_value: T,
-        *,
+        /,
         dispatcher: Dispatcher[T, Any] | None = None,
     ) -> Self:
-        converter = _StaticPipelineConverter(input_value)
-        self.__steps.add(converter, dispatcher)
+        self.__steps.add_static(input_value, dispatcher)
         return self
 
     async def dispatch(self, input_value: I, /) -> O:
@@ -187,6 +195,15 @@ class ContextPipeline[I]:
 
     def add_middlewares(self, *middlewares: Middleware[[I], Any]) -> Self:
         self.__middleware_group.add(*middlewares)
+        return self
+
+    def add_static_step[T](
+        self,
+        input_value: T,
+        /,
+        dispatcher: Dispatcher[T, Any] | None = None,
+    ) -> Self:
+        self.__steps.add_static(input_value, dispatcher)
         return self
 
     if TYPE_CHECKING:  # pragma: no cover
