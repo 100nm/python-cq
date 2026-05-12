@@ -1,52 +1,57 @@
 # Dispatching messages
 
-To dispatch messages to their handlers, **python-cq** provides three bus classes: `CommandBus`, `QueryBus`, and `EventBus`.
+**python-cq** exposes three bus types to dispatch messages to their handlers: `CommandBus`, `QueryBus`, and `EventBus`. Each takes a generic parameter that types the return value of `dispatch`.
 
-Each bus can take a generic parameter to specify the return type of the `dispatch` method.
+A bus instance is obtained from your DI container. The examples below assume the bus has already been resolved; see [Configuring a bus](configuring.md) for how to build and register one.
 
-## Retrieving a bus
+## `CommandBus`
 
-Bus instances are resolved through the configured DI adapter. When using the `[injection]` extra:
+The `CommandBus` dispatches commands to their single registered handler and returns the handler's value:
 
 ```python
 from cq import CommandBus
-from injection import inject
 
-@inject
-async def create_user(bus: CommandBus[None]):
-    command = CreateUserCommand(name="John", email="john@example.com")
-    await bus.dispatch(command)
+bus: CommandBus[int] = ...
+command = CreateUserCommand(name="Ada", email="ada@example.com")
+user_id = await bus.dispatch(command)
 ```
 
-## CommandBus
+## `QueryBus`
 
-Use the CommandBus to dispatch commands. It returns the value produced by the handler.
-```python
-from cq import CommandBus
+The `QueryBus` dispatches queries to their single registered handler and returns the handler's value:
 
-bus: CommandBus[None]
-command = CreateUserCommand(name="John", email="john@example.com")
-await bus.dispatch(command)
-```
-
-## QueryBus
-
-Use the QueryBus to dispatch queries. It returns the value produced by the handler.
 ```python
 from cq import QueryBus
 
-bus: QueryBus[User]
-query = GetUserByIdQuery(user_id)
+bus: QueryBus[User] = ...
+query = GetUserByIdQuery(user_id=42)
 user = await bus.dispatch(query)
 ```
 
-## EventBus
+## `EventBus`
 
-Use the EventBus to dispatch events. Since events can be handled by multiple handlers (or none), it does not return a value.
+The `EventBus` fans an event out to every registered handler. It does not return a value, since multiple handlers may produce conflicting results.
+
 ```python
 from cq import EventBus
 
-bus: EventBus
-event = UserCreatedEvent(user_id)
+bus: EventBus = ...
+event = UserCreatedEvent(user_id=42)
 await bus.dispatch(event)
 ```
+
+Event handlers run concurrently inside a single `anyio` task group. `dispatch` returns once every handler has finished. If any handler raises (and is not declared with `fail_silently=True`), the exception is propagated through the task group, which may produce an `ExceptionGroup` when several handlers fail.
+
+## When no handler is registered
+
+If no handler matches the message type, `dispatch` returns the `NotImplemented` sentinel instead of raising. This is convenient when a message is optional in some contexts (for example a query that may or may not have a backing handler depending on configuration), but it means you should not assume a `dispatch` result is always meaningful:
+
+```python
+result = await bus.dispatch(SomeQuery())
+
+if result is NotImplemented:
+    # No handler is registered for SomeQuery.
+    ...
+```
+
+The same sentinel is returned when a handler declared with `fail_silently=True` raises. For events, there is nothing to return, so the sentinel is not exposed.

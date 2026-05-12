@@ -3,45 +3,77 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/python-cq.svg?color=4051b5&style=for-the-badge)](https://pypi.org/project/python-cq)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/python-cq.svg?color=4051b5&style=for-the-badge)](https://pypistats.org/packages/python-cq)
 
-**python-cq** is a Python package designed to organize your code following CQRS principles. It provides a `DIAdapter` protocol for dependency injection, with [python-injection](https://github.com/100nm/python-injection) as the default implementation available via the `[injection]` extra.
+**python-cq** is an async-first Python library for organizing code around CQRS. It separates reads (queries), writes (commands), and notifications (events) into dedicated message buses, and lets you plug in any dependency injection framework behind a small protocol.
 
 ## What is CQRS?
 
-CQRS (Command Query Responsibility Segregation) is an architectural pattern that separates read operations from write operations. This separation helps to:
+CQRS (Command Query Responsibility Segregation) splits read operations from write operations. Each operation has a single, well-defined responsibility, which:
 
-- **Clarify intent**: each operation has a single, well-defined responsibility
-- **Improve maintainability**: smaller, focused handlers are easier to understand and modify
-- **Simplify testing**: isolated handlers are straightforward to unit test
+* **clarifies intent**: a `CreateUserCommand` does one thing, and its name says so;
+* **keeps handlers small**: one message, one handler, easy to test in isolation;
+* **makes side effects explicit**: events fan out to subscribers without coupling the producer to them.
 
-CQRS is often associated with distributed systems and Event Sourcing, but its benefits extend beyond that. Even in a local or monolithic application, adopting this pattern helps structure your code and makes the boundaries between reading and writing explicit.
+CQRS is often discussed alongside distributed systems and Event Sourcing, but the pattern is just as useful in a local or monolithic application. The boundaries it draws are valuable on their own.
 
-## Prerequisites
+## Three message types
 
-To get the most out of **python-cq**, familiarity with the following concepts is recommended:
+| Type      | Intent                                | Handlers              | Returns                  |
+|-----------|---------------------------------------|-----------------------|--------------------------|
+| `Command` | Change the state of the system        | Exactly one           | The handler's return value |
+| `Query`   | Read state without side effects       | Exactly one           | The handler's return value |
+| `Event`   | Notify that something has happened    | Zero, one, or many    | Nothing                  |
 
-- **CQRS** and the distinction between Commands, Queries and Events
-- **Domain Driven Design (DDD)**, particularly aggregates and bounded contexts
-
-This knowledge will help you design coherent handlers and organize your code effectively.
-
-## Message types
-
-**python-cq** provides three types of messages to model your application's operations:
-
-- **Command**: represents an intent to change the system's state. A command is handled by exactly one handler and may return a value for convenience.
-- **Query**: represents a request for information. A query is handled by exactly one handler and returns data without side effects.
-- **Event**: represents something that has happened in the system. An event can be handled by zero, one, or many handlers, enabling loose coupling between components.
+A `Command` is allowed to return a value (for convenience, typically an id or a result object), but that does not mean it should be used as a query. Keep intent clear.
 
 ## Installation
 
 Requires Python 3.12 or higher.
 
-Without dependency injection:
+With the default DI backend ([python-injection](https://github.com/100nm/python-injection), recommended):
+
+```bash
+pip install "python-cq[injection]"
+```
+
+Without dependency injection (you will need to implement a `DIAdapter`):
+
 ```bash
 pip install python-cq
 ```
 
-With [python-injection](https://github.com/100nm/python-injection) as the DI backend (recommended):
-```bash
-pip install "python-cq[injection]"
+## Quickstart
+
+```python
+import asyncio
+from cq import CommandBus, command_handler
+from dataclasses import dataclass
+from injection import inject
+
+@dataclass
+class CreateUserCommand:
+    name: str
+    email: str
+
+@command_handler
+class CreateUserHandler:
+    async def handle(self, command: CreateUserCommand) -> int:
+        # ... persist the user, return its id
+        return 42
+
+@inject
+async def main(bus: CommandBus[int]) -> None:
+    command = CreateUserCommand(name="Ada", email="ada@example.com")
+    user_id = await bus.dispatch(command)
+    print(f"Created user {user_id}")
+
+asyncio.run(main())
 ```
+
+The decorator registers the handler against the type of its first `handle` parameter. The bus is resolved by the DI container and dispatched to that handler.
+
+## Prerequisites
+
+Familiarity with the following helps you get the most out of python-cq:
+
+* **CQRS**, in particular the distinction between Commands, Queries, and Events.
+* **Domain Driven Design (DDD)**, particularly aggregates and bounded contexts, which complement CQRS well.

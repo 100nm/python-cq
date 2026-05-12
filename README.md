@@ -5,20 +5,18 @@
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/python-cq.svg?color=blue)](https://pypistats.org/packages/python-cq)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-Documentation: https://python-cq.remimd.dev
+An async-first Python library for structuring code around CQRS (Commands, Queries, Events) with pluggable dependency injection.
 
-**python-cq** is a Python package designed to organize your code following CQRS principles. It provides a `DIAdapter` protocol for dependency injection, with [python-injection](https://github.com/100nm/python-injection) as the default implementation available via the `[injection]` extra.
+## Documentation
+
+The full guide lives at **<https://python-cq.remimd.dev>**. Start there: it covers installation, the message model, dispatching, bus configuration, command pipelines, and how to plug in a custom DI framework.
 
 ## Installation
 
-⚠️ _Requires Python 3.12 or higher_
+Requires Python 3.12 or higher.
 
-Without dependency injection:
-```bash
-pip install python-cq
-```
-
-With [python-injection](https://github.com/100nm/python-injection) as the DI backend (recommended):
 ```bash
 pip install "python-cq[injection]"
 ```
+
+The `[injection]` extra installs [python-injection](https://github.com/100nm/python-injection) as the default DI backend (recommended). To bring your own DI framework, install `python-cq` without the extra and see the [Custom DI adapter](https://python-cq.remimd.dev/di) guide.
