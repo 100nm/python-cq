@@ -1,12 +1,15 @@
-# Custom DI
+# Custom DI adapter
 
-**python-cq** abstracts dependency injection behind the `DIAdapter` protocol, allowing you to integrate any DI framework.
+!!! note
+    If you installed `python-cq[injection]`, you can skip this page. The default DI integration with [python-injection](https://github.com/100nm/python-injection) is already wired up. This guide is only useful if you want to plug in a different DI framework (or none at all).
+
+**python-cq** does not depend on any specific dependency injection container. Instead, it talks to DI through the `DIAdapter` protocol. Implement this protocol once and you can use the library with any container you already have in your project.
 
 ## The `CQ` class
 
-`CQ` is the central object that binds together the handler registries and the DI adapter. The module-level decorators (`command_handler`, `event_handler`, `query_handler`) and bus factories (`new_command_bus`, `new_event_bus`, `new_query_bus`) all derive from a default `CQ` instance created at import time.
+`CQ` ties together the handler registries and the DI adapter. The module-level decorators (`command_handler`, `event_handler`, `query_handler`) and bus factories (`new_command_bus`, `new_event_bus`, `new_query_bus`) all derive from a default `CQ` instance built at import time.
 
-You can create additional isolated instances when you need separate handler registries, for example in tests or in a multi-tenant setup:
+You create your own `CQ` instance to wire the library against a custom `DIAdapter`:
 
 ```python
 from cq import CQ, ContextCommandPipeline
@@ -22,15 +25,17 @@ new_event_bus = cq.new_event_bus
 new_query_bus = cq.new_query_bus
 ```
 
-When using `ContextCommandPipeline`, pass `cq.di` explicitly so it uses the same DI adapter:
+When you build a `ContextCommandPipeline` against a non-default `CQ`, pass its DI adapter explicitly so the pipeline dispatches through the right buses:
 
 ```python
 ContextCommandPipeline(cq.di)
 ```
 
+If you use the default `CQ`, `ContextCommandPipeline()` (with no argument) is enough.
+
 ## Implementing a `DIAdapter`
 
-`DIAdapter` is a `Protocol`. Implement it to integrate any DI framework:
+`DIAdapter` is a `Protocol` with four methods, three of them required:
 
 ```python
 from collections.abc import Awaitable, Callable
@@ -39,15 +44,28 @@ from typing import Any, AsyncContextManager
 
 class MyDIAdapter(DIAdapter):
     def command_scope(self) -> AsyncContextManager[None]:
-        # Return an async context manager that:
-        # - opens a DI scope for the duration of a command dispatch
-        # - manages the lifecycle of a RelatedEvents instance within that scope
-        # - silently ignores nested activations (re-entrant calls)
+        """
+        Return an async context manager that delimits a command dispatch.
+
+        Responsibilities:
+          1. Open a DI scope for the duration of the command.
+          2. Build a `RelatedEvents` instance inside that scope and make it
+             resolvable, so command handlers can inject it.
+          3. Silently ignore nested re-entrant activations (see below).
+
+        Re-entrancy: `command_scope` is opened twice for a single logical
+        command when a `ContextCommandPipeline` wraps a command dispatch.
+        Implementations must detect that case (for example, by checking a
+        contextvar) and skip opening a second scope.
+        """
         ...
 
     def lazy[T](self, tp: type[T]) -> Callable[[], Awaitable[T]]:
-        # Ask the DI framework for a resolver for `tp`.
-        # The returned callable, when called and awaited, performs the resolution.
+        """
+        Return a callable that, when called and awaited, resolves `tp` from
+        the container. Used to wire up bus references lazily so that buses
+        configured later in the import graph are still picked up.
+        """
         ...
 
     def register_defaults(
@@ -56,16 +74,23 @@ class MyDIAdapter(DIAdapter):
         event_bus: Callable[..., EventBus],
         query_bus: Callable[..., QueryBus[Any]],
     ) -> None:
-        # Register the bus factories as default providers so that handlers
-        # can declare CommandBus, EventBus, or QueryBus as dependencies.
-        # This method is optional; the default implementation is a no-op.
+        """
+        Register the bus factories with the container so that handlers can
+        declare `CommandBus`, `EventBus`, or `QueryBus` as dependencies.
+
+        Optional: the default implementation is a no-op, which is fine if
+        your container does not need explicit registration.
+        """
         ...
 
     def wire[T](self, tp: type[T]) -> Callable[..., Awaitable[T]]:
-        # Return an async factory that instantiates `tp` with injected dependencies.
-        # Used internally to build handler instances.
+        """
+        Return an async factory that instantiates `tp` with injected
+        dependencies. Used internally to build handler instances.
+        """
         ...
-
 
 cq = CQ(MyDIAdapter()).register_defaults()
 ```
+
+The reference implementation for python-injection lives in `cq.ext.injection.InjectionAdapter`. It is a good starting point if you need to model your own adapter on a working example.

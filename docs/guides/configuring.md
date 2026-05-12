@@ -1,20 +1,21 @@
-# Configuring a Bus
+# Configuring a bus
 
 !!! note
-    This guide assumes the `[injection]` extra is installed.
+    This guide assumes the `[injection]` extra is installed. If you use a different DI framework, register the factory below with your own container, not with `@injectable`.
 
-Each bus can be customized with listeners and middlewares. To do so, create a factory function decorated with `@injectable` that returns the configured bus.
+Each bus can be customized by attaching listeners and middlewares. The recommended pattern is a factory function that builds a configured bus and registers it in the DI container:
+
 ```python
-from cq import CommandBus, MiddlewareResult, new_command_bus
+from cq import CommandBus, new_command_bus
 from injection import injectable
 
-async def listener(message: MessageType):
+async def listener(message):
     ...
 
-async def middleware(message: MessageType) -> MiddlewareResult[ReturnType]:
-    # do something before the handler is executed
-    return_value = yield
-    # do something after the handler is executed
+async def middleware(message):
+    # runs before the handler
+    result = yield
+    # runs after the handler
 
 @injectable
 def command_bus_factory() -> CommandBus:
@@ -24,68 +25,74 @@ def command_bus_factory() -> CommandBus:
     return bus
 ```
 
-The same pattern applies to `QueryBus` and `EventBus` using `new_query_bus()` and `new_event_bus()`.
+The same pattern applies to `QueryBus` and `EventBus`, with `new_query_bus()` and `new_event_bus()`.
 
 ## Listeners
 
-Listeners are executed before the handler(s). They receive the message and can perform side effects such as logging or validation.
+Listeners are fire-and-forget callables that receive the message. They are useful for logging, metrics, or any side effect that does not need to influence the handler.
+
 ```python
-async def log_listener(message: MessageType):
+async def log_listener(message):
     print(f"Received: {message}")
 ```
 
+Listeners are scheduled in an `anyio` task group, so several listeners run concurrently. The timing depends on the bus type:
+
+* **`CommandBus` and `QueryBus`**: every listener must finish before the handler runs. The handler cannot start until listeners have settled, and `dispatch` returns the handler's value as soon as it completes.
+* **`EventBus`**: listeners and handlers share the same task group, so they all run concurrently. `dispatch` returns once everything has finished.
+
 ## Middlewares
 
-Middlewares wrap around handler execution, allowing you to run logic before and after a handler processes a message.
+A middleware wraps handler execution. Use it to run logic before and after the handler processes the message, or to handle exceptions.
+
 ```python
-async def timing_middleware(message: Any) -> MiddlewareResult[Any]:
+import time
+
+async def timing_middleware(message):
     start = time.time()
     yield
     print(f"Execution time: {time.time() - start}s")
 ```
 
-For commands and queries, middlewares run once around the single handler. For events, middlewares run around each handler individually.
+For commands and queries, the middleware stack wraps the single registered handler once. For events, the stack is applied around each handler independently, so a middleware sees one invocation per event handler.
 
-!!! note
-    The generator was chosen to keep both the input message and the return value read-only.
+The `yield` form makes the middleware look like a try/finally around the handler call. The expression `result = yield` receives the handler's return value, but only for inspection: middlewares of this form cannot replace it. This was a deliberate choice to keep the message and the result read-only by default.
 
 ### Classic middlewares
 
-As an alternative, classic middlewares receive `call_next` as their first argument, followed by the handler's arguments. This pattern allows you to read and modify the return value:
+If you need to read or substitute the return value, write a "classic" middleware. It takes `call_next` as its first argument and returns the value it wants to expose to the caller:
+
 ```python
-from collections.abc import Awaitable, Callable
-from typing import Any
 import time
 
-async def timing_middleware(
-    call_next: Callable[[Any], Awaitable[Any]],
-    message: Any,
-) -> Any:
+async def timing_middleware(call_next, message):
     start = time.time()
     result = await call_next(message)
     print(f"Execution time: {time.time() - start}s")
     return result
 ```
 
+Both styles can be mixed freely in the same bus.
+
 ## Class-based listeners and middlewares
 
-For more flexibility, listeners and middlewares can be defined as classes with a `__call__` method. This allows you to inject dependencies and configure their behavior.
+Listeners and middlewares can also be classes with a `__call__` method, which is convenient when they need their own dependencies:
+
 ```python
-from cq import MiddlewareResult
 from dataclasses import dataclass
 
 @dataclass
 class LogListener:
     logger: Logger
 
-    async def __call__(self, message: Any):
+    async def __call__(self, message):
         self.logger.info(f"Received: {message}")
 
 @dataclass
 class TimingMiddleware:
     metrics: MetricsService
 
-    async def __call__(self, message: Any) -> MiddlewareResult[Any]:
+    async def __call__(self, message):
         start = time.time()
         yield
         self.metrics.record(time.time() - start)
@@ -94,13 +101,33 @@ class TimingMiddleware:
 class ClassicTimingMiddleware:
     metrics: MetricsService
 
-    async def __call__(
-        self,
-        call_next: Callable[[Any], Awaitable[Any]],
-        message: Any,
-    ) -> Any:
+    async def __call__(self, call_next, message):
         start = time.time()
         result = await call_next(message)
         self.metrics.record(time.time() - start)
         return result
 ```
+
+If you build these classes through your DI container, you get the same constructor injection as for handlers.
+
+## Built-in middlewares
+
+### `RetryMiddleware`
+
+`cq.middlewares.retry.RetryMiddleware` retries the wrapped call when it raises one of the configured exception types:
+
+```python
+from cq import new_command_bus
+from cq.middlewares.retry import RetryMiddleware
+
+bus = new_command_bus()
+bus.add_middlewares(RetryMiddleware(retry=3, delay=0.5, exceptions=(TimeoutError,)))
+```
+
+The parameters are:
+
+* `retry`: total number of attempts (including the first one). With `retry=3`, the call runs at most three times.
+* `delay`: seconds to wait between attempts. Defaults to `0`.
+* `exceptions`: the exception types that trigger a retry. Defaults to `(Exception,)`, which retries on any non-`BaseException` failure.
+
+If every attempt fails, the last exception is re-raised.
