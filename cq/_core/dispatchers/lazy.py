@@ -3,7 +3,7 @@ from types import GenericAlias
 from typing import TypeAliasType
 
 from cq._core.di import DIAdapter
-from cq._core.dispatcher.base import Dispatcher
+from cq._core.dispatchers.abc import Dispatcher
 
 
 class LazyDispatcher[I, O](Dispatcher[I, O]):

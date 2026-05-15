@@ -1,7 +1,7 @@
 from typing import Any, Self
 
 from cq._core.di import DIAdapter
-from cq._core.dispatcher.bus import Bus, SimpleBus, TaskBus
+from cq._core.dispatchers.bus import Bus, SimpleBus, TaskBus
 from cq._core.handler import (
     HandlerDecorator,
     HandlerRegistry,

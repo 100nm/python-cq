@@ -6,7 +6,7 @@ import anyio
 from anyio.abc import ObjectReceiveStream, ObjectSendStream
 
 from cq._core.pump import Pump
-from cq._core.queue.base import Queue
+from cq._core.queues.abc import Queue
 
 
 class MemoryQueue[T](Queue[T]):

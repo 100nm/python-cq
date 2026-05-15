@@ -4,7 +4,7 @@ import pytest
 from injection import Module
 
 from cq import CQ, Bus, CommandBus, EventBus, QueryBus
-from cq._core.dispatcher.bus import SimpleBus
+from cq._core.dispatchers.bus import SimpleBus
 from cq.ext.injection import InjectionAdapter
 from tests.helpers.history import HistoryMiddleware
 

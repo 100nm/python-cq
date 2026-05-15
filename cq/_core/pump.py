@@ -5,7 +5,7 @@ from typing import Any
 
 import anyio
 
-from cq._core.queue.base import Consumer
+from cq._core.queues.abc import Consumer
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)

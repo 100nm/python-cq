@@ -5,7 +5,7 @@ from typing import Any, Protocol, Self, runtime_checkable
 import anyio
 from anyio.abc import TaskGroup
 
-from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
+from cq._core.dispatchers.abc import BaseDispatcher, Dispatcher
 from cq._core.handler import (
     HandleFunction,
     HandlerFactory,

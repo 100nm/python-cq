@@ -1,6 +1,6 @@
 from typing import Any
 
-from cq._core.dispatcher.base import Dispatcher
+from cq._core.dispatchers.abc import Dispatcher
 
 Command = object
 Event = object

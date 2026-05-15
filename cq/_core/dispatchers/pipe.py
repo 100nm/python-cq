@@ -14,7 +14,7 @@ from typing import (
 )
 
 from cq._core.common.typing import Decorator, Method
-from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
+from cq._core.dispatchers.abc import BaseDispatcher, Dispatcher
 from cq._core.middleware import Middleware, MiddlewareGroup
 
 type ConvertAsync[**P, I, O] = Callable[Concatenate[O, P], Awaitable[I]]

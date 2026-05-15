@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, Any, Self, overload
 from cq import Dispatcher
 from cq._core.common.typing import Decorator
 from cq._core.di import DIAdapter
-from cq._core.dispatcher.lazy import LazyDispatcher
-from cq._core.dispatcher.pipe import (
+from cq._core.dispatchers.lazy import LazyDispatcher
+from cq._core.dispatchers.pipe import (
     ContextPipeline,
     ConvertMethod,
     ConvertMethodAsync,

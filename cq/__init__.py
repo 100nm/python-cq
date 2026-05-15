@@ -1,9 +1,9 @@
 from ._core.cq import CQ
 from ._core.di import DIAdapter
 from ._core.di import NoDI as _NoDI
-from ._core.dispatcher.base import Dispatcher
-from ._core.dispatcher.bus import Bus
-from ._core.dispatcher.pipe import ContextPipeline, Pipe
+from ._core.dispatchers.abc import Dispatcher
+from ._core.dispatchers.bus import Bus
+from ._core.dispatchers.pipe import ContextPipeline, Pipe
 from ._core.message import (
     AnyCommandBus,
     Command,
@@ -16,8 +16,8 @@ from ._core.message import (
 from ._core.middleware import Middleware, MiddlewareResult, resolve_handler_source
 from ._core.pipetools import ContextCommandPipeline as _ContextCommandPipeline
 from ._core.pump import Pump
-from ._core.queue.base import Consumer, Producer, Queue
-from ._core.queue.memory import MemoryQueue
+from ._core.queues.abc import Consumer, Producer, Queue
+from ._core.queues.memory import MemoryQueue
 from ._core.related_events import AnyIORelatedEvents, RelatedEvents
 
 __all__ = (
