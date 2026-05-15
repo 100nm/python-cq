@@ -257,8 +257,8 @@ class ContextPipeline[I]:
         context: Context,
         context_type: type[Context] | None,
     ) -> Context:
-        async def handler(m: I, /) -> Context:
-            await self.__steps.execute(m, context, context_type)
+        async def handler(first_message: I, /) -> Context:
+            await self.__steps.execute(first_message, context, context_type)
             return context
 
         return await self.__middleware_group.invoke(handler, message)
