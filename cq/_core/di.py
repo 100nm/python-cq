@@ -5,7 +5,7 @@ from collections.abc import Awaitable, Callable
 from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any, AsyncContextManager, Protocol, runtime_checkable
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from cq import CommandBus, EventBus, QueryBus
 
 

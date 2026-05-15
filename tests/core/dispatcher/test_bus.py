@@ -3,7 +3,7 @@ from typing import Any, Self
 import pytest
 
 from cq import MiddlewareResult
-from cq._core.dispatcher.bus import SimpleBus, TaskBus
+from cq._core.dispatchers.bus import SimpleBus, TaskBus
 
 
 class TestSimpleBus:

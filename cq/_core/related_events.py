@@ -1,12 +1,13 @@
 from abc import abstractmethod
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from types import TracebackType
-from typing import Protocol, Self, runtime_checkable
+from typing import Any, Protocol, Self, runtime_checkable
 
 from anyio import create_task_group
 from anyio.abc import TaskGroup
 
-from cq._core.message import Event, EventBus
+from cq._core.message import Event
 
 
 @runtime_checkable
@@ -20,7 +21,7 @@ class RelatedEvents(Protocol):
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class AnyIORelatedEvents(RelatedEvents):
-    event_bus: EventBus
+    emit: Callable[[Event], Awaitable[Any]]
     task_group: TaskGroup = field(default_factory=create_task_group)
     history: list[Event] = field(default_factory=list, init=False)
 
@@ -41,7 +42,5 @@ class AnyIORelatedEvents(RelatedEvents):
 
     def add(self, *events: Event) -> None:
         self.history.extend(events)
-        dispatch_method = self.event_bus.dispatch
-
         for event in events:
-            self.task_group.start_soon(dispatch_method, event)
+            self.task_group.start_soon(self.emit, event)

@@ -3,7 +3,7 @@ from types import GenericAlias
 from typing import TypeAliasType
 
 from cq._core.di import DIAdapter
-from cq._core.dispatcher.base import Dispatcher
+from cq._core.dispatchers.abc import Dispatcher
 
 
 class LazyDispatcher[I, O](Dispatcher[I, O]):
@@ -19,6 +19,6 @@ class LazyDispatcher[I, O](Dispatcher[I, O]):
     ) -> None:
         self.__resolve = di.lazy(dispatcher_type)  # type: ignore[arg-type]
 
-    async def dispatch(self, input_value: I, /) -> O:
+    async def dispatch(self, message: I, /) -> O:
         dispatcher = await self.__resolve()
-        return await dispatcher.dispatch(input_value)
+        return await dispatcher.dispatch(message)

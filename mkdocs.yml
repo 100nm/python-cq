@@ -21,6 +21,7 @@ nav:
       - Dispatching messages: guides/dispatching.md
       - Configuring a bus: guides/configuring.md
       - Executing multiple commands: guides/pipeline.md
+      - Queueing messages: guides/queues.md
   - Custom DI adapter: di.md
 
 plugins:

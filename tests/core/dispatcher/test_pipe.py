@@ -1,7 +1,7 @@
 from typing import Any, Self
 
 from cq import Bus, Pipe
-from cq._core.dispatcher.bus import SimpleBus
+from cq._core.dispatchers.bus import SimpleBus
 
 
 class TestPipe:

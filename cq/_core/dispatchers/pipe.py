@@ -14,7 +14,7 @@ from typing import (
 )
 
 from cq._core.common.typing import Decorator, Method
-from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
+from cq._core.dispatchers.abc import BaseDispatcher, Dispatcher
 from cq._core.middleware import Middleware, MiddlewareGroup
 
 type ConvertAsync[**P, I, O] = Callable[Concatenate[O, P], Awaitable[I]]
@@ -31,7 +31,7 @@ class PipelineConverter[**P, I, O](Protocol):
     __slots__ = ()
 
     @abstractmethod
-    async def convert(self, output_value: O, /, *args: P.args, **kwargs: P.kwargs) -> I:
+    async def convert(self, result: O, /, *args: P.args, **kwargs: P.kwargs) -> I:
         raise NotImplementedError
 
 
@@ -54,28 +54,24 @@ class PipelineSteps[**P, I, O]:
         self.__steps.append(PipelineStep(converter, dispatcher))
         return self
 
-    def add_static[T](
-        self,
-        input_value: T,
-        dispatcher: Dispatcher[T, Any] | None,
-    ) -> Self:
-        converter = _StaticPipelineConverter(input_value)
+    def add_static[T](self, message: T, dispatcher: Dispatcher[T, Any] | None) -> Self:
+        converter = _StaticPipelineConverter(message)
         self.add(converter, dispatcher)  # type: ignore[arg-type]
         return self
 
-    async def execute(self, input_value: I, /, *args: P.args, **kwargs: P.kwargs) -> O:
+    async def execute(self, message: I, /, *args: P.args, **kwargs: P.kwargs) -> O:
         dispatcher = self.default_dispatcher
 
         for step in self.__steps:
-            output_value = await dispatcher.dispatch(input_value)
-            input_value = await step.converter.convert(output_value, *args, **kwargs)
+            result = await dispatcher.dispatch(message)
+            message = await step.converter.convert(result, *args, **kwargs)
 
-            if input_value is None:
+            if message is None:
                 return NotImplemented
 
             dispatcher = step.dispatcher or self.default_dispatcher
 
-        return await dispatcher.dispatch(input_value)
+        return await dispatcher.dispatch(message)
 
 
 class Pipe[I, O](BaseDispatcher[I, O]):
@@ -136,15 +132,15 @@ class Pipe[I, O](BaseDispatcher[I, O]):
 
     def add_static_step[T](
         self,
-        input_value: T,
+        message: T,
         /,
         dispatcher: Dispatcher[T, Any] | None = None,
     ) -> Self:
-        self.__steps.add_static(input_value, dispatcher)
+        self.__steps.add_static(message, dispatcher)
         return self
 
-    async def dispatch(self, input_value: I, /) -> O:
-        return await self._invoke_with_middlewares(self.__steps.execute, input_value)
+    async def dispatch(self, message: I, /) -> O:
+        return await self._invoke_with_middlewares(self.__steps.execute, message)
 
 
 class ContextPipeline[I]:
@@ -199,11 +195,11 @@ class ContextPipeline[I]:
 
     def add_static_step[T](
         self,
-        input_value: T,
+        message: T,
         /,
         dispatcher: Dispatcher[T, Any] | None = None,
     ) -> Self:
-        self.__steps.add_static(input_value, dispatcher)
+        self.__steps.add_static(message, dispatcher)
         return self
 
     if TYPE_CHECKING:  # pragma: no cover
@@ -255,49 +251,49 @@ class ContextPipeline[I]:
 
     async def __execute[Context](
         self,
-        input_value: I,
+        message: I,
         /,
         *,
         context: Context,
         context_type: type[Context] | None,
     ) -> Context:
-        async def handler(i: I, /) -> Context:
-            await self.__steps.execute(i, context, context_type)
+        async def handler(first_message: I, /) -> Context:
+            await self.__steps.execute(first_message, context, context_type)
             return context
 
-        return await self.__middleware_group.invoke(handler, input_value)
+        return await self.__middleware_group.invoke(handler, message)
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class BoundContextPipeline[I, O](Dispatcher[I, O]):
     dispatch_method: Callable[[I], Awaitable[O]]
 
-    async def dispatch(self, input_value: I, /) -> O:
-        return await self.dispatch_method(input_value)
+    async def dispatch(self, message: I, /) -> O:
+        return await self.dispatch_method(message)
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class _AsyncPipelineConverter[**P, I, O](PipelineConverter[P, I, O]):
     converter: ConvertAsync[P, I, O]
 
-    async def convert(self, output_value: O, /, *args: P.args, **kwargs: P.kwargs) -> I:
-        return await self.converter(output_value, *args, **kwargs)
+    async def convert(self, result: O, /, *args: P.args, **kwargs: P.kwargs) -> I:
+        return await self.converter(result, *args, **kwargs)
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class _SyncPipelineConverter[**P, I, O](PipelineConverter[P, I, O]):
     converter: ConvertSync[P, I, O]
 
-    async def convert(self, output_value: O, /, *args: P.args, **kwargs: P.kwargs) -> I:
-        return self.converter(output_value, *args, **kwargs)
+    async def convert(self, result: O, /, *args: P.args, **kwargs: P.kwargs) -> I:
+        return self.converter(result, *args, **kwargs)
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class _StaticPipelineConverter[I](PipelineConverter[..., I, Any]):
-    input_value: I
+    message: I
 
-    async def convert(self, output_value: Any, /, *args: Any, **kwargs: Any) -> I:
-        return self.input_value
+    async def convert(self, result: Any, /, *args: Any, **kwargs: Any) -> I:
+        return self.message
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
@@ -308,13 +304,13 @@ class _AsyncContextPipelineConverter[I, O](
 
     async def convert(
         self,
-        output_value: O,
+        result: O,
         /,
         context: object,
         context_type: type | None,
     ) -> I:
         method = self.converter.__get__(context, context_type)
-        return await method(output_value)
+        return await method(result)
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
@@ -325,10 +321,10 @@ class _SyncContextPipelineConverter[I, O](
 
     async def convert(
         self,
-        output_value: O,
+        result: O,
         /,
         context: object,
         context_type: type | None,
     ) -> I:
         method = self.converter.__get__(context, context_type)
-        return method(output_value)
+        return method(result)

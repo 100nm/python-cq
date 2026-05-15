@@ -5,7 +5,7 @@ from typing import Any, Protocol, Self, runtime_checkable
 import anyio
 from anyio.abc import TaskGroup
 
-from cq._core.dispatcher.base import BaseDispatcher, Dispatcher
+from cq._core.dispatchers.abc import BaseDispatcher, Dispatcher
 from cq._core.handler import (
     HandleFunction,
     HandlerFactory,
@@ -33,7 +33,7 @@ class Bus[I, O](Dispatcher[I, O], Protocol):
     @abstractmethod
     def subscribe(
         self,
-        input_type: type[I],
+        message_type: type[I],
         factory: HandlerFactory[[I], O],
         fail_silently: bool = ...,
     ) -> Self:
@@ -57,19 +57,19 @@ class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
 
     def subscribe(
         self,
-        input_type: type[I],
+        message_type: type[I],
         factory: HandlerFactory[[I], O],
         fail_silently: bool = False,
     ) -> Self:
-        self.__registry.subscribe(input_type, factory, fail_silently=fail_silently)
+        self.__registry.subscribe(message_type, factory, fail_silently=fail_silently)
         return self
 
-    def _handlers_from(self, input_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
-        return self.__registry.handlers_from(input_type)
+    def _handlers_from(self, message_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
+        return self.__registry.handlers_from(message_type)
 
-    def _trigger_listeners(self, input_value: I, /, task_group: TaskGroup) -> None:
+    def _trigger_listeners(self, message: I, /, task_group: TaskGroup) -> None:
         for listener in self.__listeners:
-            task_group.start_soon(listener, input_value)
+            task_group.start_soon(listener, message)
 
 
 class SimpleBus[I, O](BaseBus[I, O]):
@@ -78,14 +78,14 @@ class SimpleBus[I, O](BaseBus[I, O]):
     def __init__(self, registry: HandlerRegistry[I, O] | None = None, /) -> None:
         super().__init__(registry or SingleHandlerRegistry())
 
-    async def dispatch(self, input_value: I, /) -> O:
+    async def dispatch(self, message: I, /) -> O:
         async with anyio.create_task_group() as task_group:
-            self._trigger_listeners(input_value, task_group)
+            self._trigger_listeners(message, task_group)
 
-        for handler in self._handlers_from(type(input_value)):
+        for handler in self._handlers_from(type(message)):
             return await self._invoke_with_middlewares(
                 handler,
-                input_value,
+                message,
                 handler.fail_silently,
             )
 
@@ -98,14 +98,14 @@ class TaskBus[I](BaseBus[I, None]):
     def __init__(self, registry: HandlerRegistry[I, None] | None = None, /) -> None:
         super().__init__(registry or MultipleHandlerRegistry())
 
-    async def dispatch(self, input_value: I, /) -> None:
+    async def dispatch(self, message: I, /) -> None:
         async with anyio.create_task_group() as task_group:
-            self._trigger_listeners(input_value, task_group)
+            self._trigger_listeners(message, task_group)
 
-            for handler in self._handlers_from(type(input_value)):
+            for handler in self._handlers_from(type(message)):
                 task_group.start_soon(
                     self._invoke_with_middlewares,
                     handler,
-                    input_value,
+                    message,
                     handler.fail_silently,
                 )

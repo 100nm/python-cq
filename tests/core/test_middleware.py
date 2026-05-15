@@ -3,7 +3,7 @@ from typing import Any, Awaitable
 
 import pytest
 
-from cq._core.dispatcher.bus import SimpleBus
+from cq._core.dispatchers.bus import SimpleBus
 from cq._core.handler import HandlerDecorator, SingleHandlerRegistry
 from cq._core.middleware import (
     MiddlewareGroup,
