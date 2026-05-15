@@ -36,6 +36,7 @@ command_bus: CommandBus[Any] = ...
 queue: MemoryQueue[Command] = MemoryQueue()
 
 async with Pump(queue, command_bus).draining():
+    # ...
     await queue.send(command)
 ```
 
@@ -47,8 +48,10 @@ Pass `graceful=True` to let the pump finish draining whatever is already queued 
 
 ```python
 async with Pump(queue, command_bus).draining(graceful=True):
+    # ...
     await queue.send(command_1)
     await queue.send(command_2)
+    # ...
     await queue.close()
 ```
 
@@ -74,6 +77,7 @@ from typing import Any
 @inject
 async def main(command_bus: CommandBus[Any]) -> None:
     async with MemoryQueue().draining(command_bus) as queue:
+        # ...
         await queue.send(command_1)
         await queue.send(command_2)
     # Both commands have been dispatched here.
