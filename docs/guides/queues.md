@@ -11,6 +11,9 @@ Some workloads benefit from putting a queue between the producer of a message an
 
 Any object that satisfies these protocols can act as a queue. The library provides `MemoryQueue` as the default in-process implementation, and you are free to write your own without changing the rest of the API.
 
+!!! note
+    If you'd like a `Queue` implementation for a specific library, feel free to open a [discussion on GitHub](https://github.com/100nm/python-cq/discussions).
+
 ## `MemoryQueue`
 
 `MemoryQueue` is a thin wrapper around `anyio.create_memory_object_stream`. It is bounded by an optional `maxsize`, in which case `send` waits until a slot is available.
@@ -22,7 +25,7 @@ queue: MemoryQueue[Command] = MemoryQueue(maxsize=100)
 await queue.send(command)
 ```
 
-`MemoryQueue` is the right tool when producer and consumer live in the same process. For cross-process or persistent queues, implement `Queue` against your transport of choice.
+`MemoryQueue` is the right tool when producer and consumer live in the same process. It is not thread-safe: both `send` and consumption must run on the event loop that created the queue. For cross-process or persistent queues, implement `Queue` against your transport of choice.
 
 ## Draining a queue with `Pump`
 
