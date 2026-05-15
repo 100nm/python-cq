@@ -19,6 +19,6 @@ class LazyDispatcher[I, O](Dispatcher[I, O]):
     ) -> None:
         self.__resolve = di.lazy(dispatcher_type)  # type: ignore[arg-type]
 
-    async def dispatch(self, input_value: I, /) -> O:
+    async def dispatch(self, message: I, /) -> O:
         dispatcher = await self.__resolve()
-        return await dispatcher.dispatch(input_value)
+        return await dispatcher.dispatch(message)

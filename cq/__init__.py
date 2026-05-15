@@ -15,6 +15,9 @@ from ._core.message import (
 )
 from ._core.middleware import Middleware, MiddlewareResult, resolve_handler_source
 from ._core.pipetools import ContextCommandPipeline as _ContextCommandPipeline
+from ._core.pump import Pump
+from ._core.queue.base import Consumer, Producer, Queue
+from ._core.queue.memory import MemoryQueue
 from ._core.related_events import AnyIORelatedEvents, RelatedEvents
 
 __all__ = (
@@ -24,17 +27,22 @@ __all__ = (
     "CQ",
     "Command",
     "CommandBus",
+    "Consumer",
     "ContextCommandPipeline",
     "ContextPipeline",
     "DIAdapter",
     "Dispatcher",
     "Event",
     "EventBus",
+    "MemoryQueue",
     "Middleware",
     "MiddlewareResult",
     "Pipe",
+    "Producer",
+    "Pump",
     "Query",
     "QueryBus",
+    "Queue",
     "RelatedEvents",
     "command_handler",
     "event_handler",

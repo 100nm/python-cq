@@ -9,11 +9,11 @@ from cq._core.middleware import Middleware, MiddlewareGroup
 class Dispatcher[I, O](Protocol):
     __slots__ = ()
 
-    async def __call__(self, input_value: I, /) -> O:
-        return await self.dispatch(input_value)
+    async def __call__(self, message: I, /) -> O:
+        return await self.dispatch(message)
 
     @abstractmethod
-    async def dispatch(self, input_value: I, /) -> O:
+    async def dispatch(self, message: I, /) -> O:
         raise NotImplementedError
 
 
@@ -32,12 +32,12 @@ class BaseDispatcher[I, O](Dispatcher[I, O], ABC):
     async def _invoke_with_middlewares(
         self,
         handler: Callable[[I], Awaitable[O]],
-        input_value: I,
+        message: I,
         /,
         fail_silently: bool = False,
     ) -> O:
         try:
-            return await self.__middleware_group.invoke(handler, input_value)
+            return await self.__middleware_group.invoke(handler, message)
         except Exception:
             if fail_silently:
                 return NotImplemented
