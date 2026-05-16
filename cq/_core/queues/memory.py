@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
+from types import TracebackType
 from typing import Any, Self
 
 import anyio
@@ -18,6 +19,17 @@ class MemoryQueue[T](Queue[T]):
 
     def __init__(self, maxsize: int = 0) -> None:
         self.__producer, self.__consumer = anyio.create_memory_object_stream(maxsize)
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        await self.close()
 
     def __aiter__(self) -> AsyncIterator[T]:
         return aiter(self.__consumer)
@@ -40,10 +52,8 @@ class MemoryQueue[T](Queue[T]):
             .add_middlewares(*middlewares)
             .draining(concurrency=concurrency, graceful=True)
         ):
-            try:
+            async with self:
                 yield self
-            finally:
-                await self.close()
 
     async def send(self, message: T, /) -> None:
         await self.__producer.send(message)
