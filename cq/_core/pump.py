@@ -5,7 +5,7 @@ from typing import Any, Self
 
 import anyio
 
-from cq._core.middleware import Middleware, MiddlewareGroup
+from cq._core.middleware import Middleware, MiddlewareGroup, deliver_message
 from cq._core.queues.abc import Consumer
 
 
@@ -25,11 +25,12 @@ class Pump[T]:
 
     async def drain(self) -> None:
         async for message in self.consumer:
-            try:
-                await self.__middleware_group.invoke(self.dispatcher, message)
-            except Exception:
-                if not self.fail_silently:
-                    raise
+            await deliver_message(
+                message,
+                self.dispatcher,
+                self.__middleware_group,
+                self.fail_silently,
+            )
 
     @asynccontextmanager
     async def draining(
