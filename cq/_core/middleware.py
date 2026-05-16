@@ -115,6 +115,21 @@ class _GeneratorMiddleware[**P, T]:
         return value
 
 
+async def deliver_message[I, O](
+    message: I,
+    handler: Callable[[I], Awaitable[O]],
+    middleware_group: MiddlewareGroup[[I], O],
+    fail_silently: bool = False,
+) -> O:
+    try:
+        return await middleware_group.invoke(handler, message)
+    except Exception:
+        if fail_silently:
+            return NotImplemented
+
+        raise
+
+
 def _is_gen_middleware[**P, T](
     middleware: Middleware[P, T],
 ) -> TypeGuard[GeneratorMiddleware[P, T]]:

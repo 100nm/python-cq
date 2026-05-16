@@ -95,7 +95,7 @@ class TimingMiddleware:
     async def __call__(self, message):
         start = time.time()
         yield
-        self.metrics.record(time.time() - start)
+        await self.metrics.record(time.time() - start)
 
 @dataclass
 class ClassicTimingMiddleware:
@@ -104,7 +104,7 @@ class ClassicTimingMiddleware:
     async def __call__(self, call_next, message):
         start = time.time()
         result = await call_next(message)
-        self.metrics.record(time.time() - start)
+        await self.metrics.record(time.time() - start)
         return result
 ```
 

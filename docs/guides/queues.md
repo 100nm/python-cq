@@ -68,6 +68,40 @@ Pump(queue, command_bus, fail_silently=True)
 
 Use this when each message is independent and a failed dispatch should not take down the whole consumer. Logging or alerting on failures is the dispatcher's responsibility, typically through a middleware on the underlying bus.
 
+### Concurrent consumption
+
+A single drain loop pulls and dispatches messages sequentially, which means the pump naturally paces itself to the dispatcher's speed. Pass `concurrency=N` to `draining` to spawn `N` drain tasks against the same `Consumer`:
+
+```python
+async with Pump(queue, command_bus).draining(concurrency=4):
+    # ...
+```
+
+This requires the `Consumer` implementation to be safe for concurrent iteration. `MemoryQueue` is, since it wraps an `anyio` memory stream; if you write a custom `Consumer`, make sure its `__aiter__` can be consumed from several tasks at once.
+
+Note that ordering is no longer guaranteed when `concurrency > 1`: faster dispatches will overtake slower ones even if the queue delivers messages in order.
+
+### Middlewares
+
+A `Pump` accepts its own middleware stack via `add_middlewares`, with the same syntax and conventions as a bus (see [Middlewares](configuring.md#middlewares)):
+
+```python
+async def sentry_middleware(message):
+    try:
+        yield
+    except Exception as exc:
+        sentry_sdk.capture_exception(exc)
+
+pump = Pump(queue, command_bus).add_middlewares(sentry_middleware)
+```
+
+Pump-level middlewares wrap the consumption cycle, while bus-level middlewares still apply to every message dispatched. The distinction matters when deciding where to put a given concern:
+
+* **On the pump**: anything tied to the consumption cycle, such as reporting failures that escape the dispatcher or capping concurrent dispatches when `concurrency > 1`.
+* **On the bus**: anything tied to handling the message, such as input validation, business-level retries, or transactional boundaries.
+
+Note that `fail_silently=True` also swallows exceptions raised from a pump middleware, so a middleware that intentionally aborts the pump will be suppressed in that mode.
+
 ## `MemoryQueue.draining` shortcut
 
 `MemoryQueue` exposes a `draining` helper that combines `Pump` with the queue's own lifecycle. It opens a pump, yields the queue, and closes it on exit so the pump terminates gracefully without an explicit `close` call:
@@ -86,4 +120,4 @@ async def main(command_bus: CommandBus[Any]) -> None:
     # Both commands have been dispatched here.
 ```
 
-`fail_silently` is forwarded to the underlying `Pump`.
+`concurrency`, `fail_silently`, and `middlewares` are forwarded to the underlying `Pump`.

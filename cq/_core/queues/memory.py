@@ -1,10 +1,11 @@
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
 from typing import Any, Self
 
 import anyio
 from anyio.abc import ObjectReceiveStream, ObjectSendStream
 
+from cq._core.middleware import Middleware
 from cq._core.pump import Pump
 from cq._core.queues.abc import Queue
 
@@ -30,9 +31,15 @@ class MemoryQueue[T](Queue[T]):
         dispatcher: Callable[[T], Awaitable[Any]],
         /,
         *,
+        concurrency: int | None = None,
         fail_silently: bool = False,
+        middlewares: Sequence[Middleware[[T], Any]] = (),
     ) -> AsyncIterator[Self]:
-        async with Pump(self, dispatcher, fail_silently).draining(graceful=True):
+        async with (
+            Pump(self, dispatcher, fail_silently)
+            .add_middlewares(*middlewares)
+            .draining(concurrency=concurrency, graceful=True)
+        ):
             try:
                 yield self
             finally:
