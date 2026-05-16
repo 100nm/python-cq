@@ -131,3 +131,26 @@ The parameters are:
 * `exceptions`: the exception types that trigger a retry. Defaults to `(Exception,)`, which retries on any non-`BaseException` failure.
 
 If every attempt fails, the last exception is re-raised.
+
+### `CaptureExceptionMiddleware`
+
+`cq.middlewares.exc.CaptureExceptionMiddleware` catches exceptions raised by downstream handlers and forwards them to a callback. Use it to log, report, or push errors to an external sink without changing how they propagate:
+
+```python
+from cq import new_command_bus
+from cq.middlewares.exc import CaptureExceptionMiddleware
+
+async def report(exception, message):
+    sentry_sdk.capture_exception(exception)
+
+bus = new_command_bus()
+bus.add_middlewares(CaptureExceptionMiddleware(report, reraise=True))
+```
+
+The parameters are:
+
+* `on_error`: an async callback invoked with the captured exception followed by the same arguments the handler received (typically the message). Use `CaptureExceptionMiddleware.sync(...)` if your callback is synchronous.
+* `exceptions`: the exception types to capture. Defaults to `(Exception,)`.
+* `reraise`: whether to re-raise the exception after the callback returns. Defaults to `False`, in which case the exception is swallowed.
+
+`on_error` is meant for side effects only (logging, metrics, notifications) and must not raise. If it does, its own exception will propagate in place of the original one.
