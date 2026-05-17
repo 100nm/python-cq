@@ -1,6 +1,6 @@
 from abc import abstractmethod
-from collections.abc import AsyncIterator
-from typing import Protocol, runtime_checkable
+from collections.abc import AsyncIterable
+from typing import AsyncContextManager, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -16,12 +16,13 @@ class Producer[T](Protocol):
 
 
 @runtime_checkable
-class Consumer[T](Protocol):
+class Delivery[T](AsyncContextManager[T], Protocol):
     __slots__ = ()
 
-    @abstractmethod
-    def __aiter__(self) -> AsyncIterator[T]:
-        raise NotImplementedError
+
+@runtime_checkable
+class Consumer[T](AsyncIterable[Delivery[T]], Protocol):
+    __slots__ = ()
 
 
 @runtime_checkable

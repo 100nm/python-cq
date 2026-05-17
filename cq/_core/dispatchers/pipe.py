@@ -140,7 +140,7 @@ class Pipe[I, O](BaseDispatcher[I, O]):
         return self
 
     async def dispatch(self, message: I, /) -> O:
-        return await self._deliver(message, self.__steps.execute)
+        return await self._invoke(self.__steps.execute, message)
 
 
 class ContextPipeline[I]:

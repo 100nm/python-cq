@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from typing import Protocol, Self, runtime_checkable
 
-from cq._core.middleware import Middleware, MiddlewareGroup, deliver_message
+from cq._core.middleware import Middleware, MiddlewareGroup
 
 
 @runtime_checkable
@@ -29,16 +29,17 @@ class BaseDispatcher[I, O](Dispatcher[I, O], ABC):
         self.__middleware_group.add(*middlewares)
         return self
 
-    async def _deliver(
+    async def _invoke(
         self,
-        message: I,
         handler: Callable[[I], Awaitable[O]],
+        message: I,
         /,
         fail_silently: bool = False,
     ) -> O:
-        return await deliver_message(
-            message,
-            handler,
-            self.__middleware_group,
-            fail_silently,
-        )
+        try:
+            return await self.__middleware_group.invoke(handler, message)
+        except Exception:
+            if fail_silently:
+                return NotImplemented
+
+            raise
