@@ -83,7 +83,7 @@ class SimpleBus[I, O](BaseBus[I, O]):
             self._trigger_listeners(message, task_group)
 
         for handler in self._handlers_from(type(message)):
-            return await self._deliver(message, handler, handler.fail_silently)
+            return await self._invoke(handler, message, handler.fail_silently)
 
         return NotImplemented
 
@@ -100,8 +100,8 @@ class TaskBus[I](BaseBus[I, None]):
 
             for handler in self._handlers_from(type(message)):
                 task_group.start_soon(
-                    self._deliver,
-                    message,
+                    self._invoke,
                     handler,
+                    message,
                     handler.fail_silently,
                 )

@@ -7,7 +7,9 @@ Some workloads benefit from putting a queue between the producer of a message an
 `Queue` is the combination of two protocols, kept separate so you can type producer-side and consumer-side ends independently:
 
 * `Producer[T]` exposes `send(message)` and is callable.
-* `Consumer[T]` exposes `__aiter__` and yields messages as they arrive.
+* `Consumer[T]` is async iterable and yields a `Delivery[T]` for each incoming message.
+
+Each `Delivery[T]` is an async context manager around a single message: entering it exposes the message, leaving it marks the end of processing to the queue, with or without an exception. This is where a transport-specific implementation can plug acknowledgement or requeue logic. `Pump` already handles the lifecycle, so most users never interact with `Delivery` directly.
 
 Any object that satisfies these protocols can act as a queue. The library provides `MemoryQueue` as the default in-process implementation, and you are free to write your own without changing the rest of the API.
 

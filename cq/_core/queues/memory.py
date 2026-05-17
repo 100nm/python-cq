@@ -1,5 +1,5 @@
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, nullcontext
 from types import TracebackType
 from typing import Any, Self
 
@@ -8,7 +8,7 @@ from anyio.abc import ObjectReceiveStream, ObjectSendStream
 
 from cq._core.middleware import Middleware
 from cq._core.pump import Pump
-from cq._core.queues.abc import Queue
+from cq._core.queues.abc import Delivery, Queue
 
 
 class MemoryQueue[T](Queue[T]):
@@ -31,8 +31,9 @@ class MemoryQueue[T](Queue[T]):
     ) -> None:
         await self.close()
 
-    def __aiter__(self) -> AsyncIterator[T]:
-        return aiter(self.__consumer)
+    async def __aiter__(self) -> AsyncIterator[Delivery[T]]:
+        async for message in self.__consumer:
+            yield nullcontext(message)
 
     async def close(self) -> None:
         await self.__producer.aclose()
