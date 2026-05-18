@@ -21,6 +21,7 @@ from ._core.queues.memory import MemoryQueue
 from ._core.related_events import AnyIORelatedEvents, RelatedEvents
 
 __all__ = (
+    "__cq__",
     "AnyCommandBus",
     "AnyIORelatedEvents",
     "Bus",
@@ -55,30 +56,27 @@ __all__ = (
 )
 
 try:
-    from cq.ext.injection import InjectionAdapter as _InjectionAdapter
+    from .ext.injection import InjectionAdapter as _InjectionAdapter
 
 except ImportError:  # pragma: no cover
-    _default = CQ(_NoDI())
+    __cq__ = CQ(_NoDI())
 
 else:
-    _default = CQ(_InjectionAdapter())
+    __cq__ = CQ(_InjectionAdapter())
 
-_default.register_defaults()
+__cq__.register_defaults()
 
-command_handler = _default.command_handler
-event_handler = _default.event_handler
-query_handler = _default.query_handler
+command_handler = __cq__.command_handler
+event_handler = __cq__.event_handler
+query_handler = __cq__.query_handler
 
-new_command_bus = _default.new_command_bus
-new_event_bus = _default.new_event_bus
-new_query_bus = _default.new_query_bus
+new_command_bus = __cq__.new_command_bus
+new_event_bus = __cq__.new_event_bus
+new_query_bus = __cq__.new_query_bus
 
 
 class ContextCommandPipeline[C: Command](_ContextCommandPipeline[C]):
     __slots__ = ()
 
-    def __init__(self, di: DIAdapter = _default.di) -> None:
+    def __init__(self, di: DIAdapter = __cq__.di) -> None:
         super().__init__(di)
-
-
-del _default

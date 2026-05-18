@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from collections import defaultdict
-from collections.abc import Awaitable, Callable, Iterator
+from collections.abc import Awaitable, Callable, Iterator, KeysView
 from dataclasses import dataclass, field
 from functools import partial
 from inspect import Parameter, isclass, unwrap
@@ -49,6 +49,11 @@ class HandleFunction[**P, T]:
 class HandlerRegistry[I, O](Protocol):
     __slots__ = ()
 
+    @property
+    @abstractmethod
+    def message_types(self) -> KeysView[type[I]]:
+        raise NotImplementedError
+
     @abstractmethod
     def handlers_from(self, message_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
         raise NotImplementedError
@@ -70,6 +75,10 @@ class MultipleHandlerRegistry[I, O](HandlerRegistry[I, O]):
         default_factory=partial(defaultdict, list),
         init=False,
     )
+
+    @property
+    def message_types(self) -> KeysView[type[I]]:
+        return self.__values.keys()
 
     def handlers_from(self, message_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
         for key_type in _iter_key_types(message_type):
@@ -96,6 +105,10 @@ class SingleHandlerRegistry[I, O](HandlerRegistry[I, O]):
         default_factory=dict,
         init=False,
     )
+
+    @property
+    def message_types(self) -> KeysView[type[I]]:
+        return self.__values.keys()
 
     def handlers_from(self, message_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
         for key_type in _iter_key_types(message_type):
