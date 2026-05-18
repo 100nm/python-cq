@@ -1,3 +1,4 @@
+from collections.abc import KeysView
 from typing import Any, Self
 
 from cq._core.di import DIAdapter
@@ -35,12 +36,24 @@ class CQ:
         return HandlerDecorator(self.__command_registry, self.__di)
 
     @property
+    def command_types(self) -> KeysView[type[Command]]:
+        return self.__command_registry.message_types
+
+    @property
     def event_handler(self) -> HandlerDecorator[Event, Any]:
         return HandlerDecorator(self.__event_registry, self.__di)
 
     @property
+    def event_types(self) -> KeysView[type[Event]]:
+        return self.__event_registry.message_types
+
+    @property
     def query_handler(self) -> HandlerDecorator[Query, Any]:
         return HandlerDecorator(self.__query_registry, self.__di)
+
+    @property
+    def query_types(self) -> KeysView[type[Query]]:
+        return self.__query_registry.message_types
 
     def new_command_bus(self) -> Bus[Command, Any]:
         bus = SimpleBus(self.__command_registry)
