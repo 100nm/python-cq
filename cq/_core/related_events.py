@@ -43,4 +43,4 @@ class AnyIORelatedEvents(RelatedEvents):
     def add(self, *events: Event) -> None:
         self.history.extend(events)
         for event in events:
-            self.task_group.start_soon(self.emit, event)
+            self.task_group.start_soon(self.emit, event)  # type: ignore[arg-type]
