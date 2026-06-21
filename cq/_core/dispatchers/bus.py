@@ -69,7 +69,7 @@ class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
 
     def _trigger_listeners(self, message: I, /, task_group: TaskGroup) -> None:
         for listener in self.__listeners:
-            task_group.start_soon(listener, message)
+            task_group.start_soon(listener, message)  # type: ignore[arg-type]
 
 
 class SimpleBus[I, O](BaseBus[I, O]):
