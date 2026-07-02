@@ -39,24 +39,22 @@ If you use the default `CQ`, `ContextCommandPipeline()` (with no argument) is en
 
 ```python
 from collections.abc import Awaitable, Callable
-from cq import CQ, DIAdapter, CommandBus, EventBus, QueryBus
-from typing import Any, AsyncContextManager
+from cq import CQ, Command, DIAdapter, CommandBus, EventBus, Middleware, QueryBus
+from typing import Any
 
 class MyDIAdapter(DIAdapter):
-    def command_scope(self) -> AsyncContextManager[None]:
+    def command_scope(self) -> Middleware[[Command], Any]:
         """
-        Return an async context manager that delimits a command dispatch.
+        Return a middleware that wraps each command dispatch.
 
         Responsibilities:
           1. Open a DI scope for the duration of the command.
           2. Build a `RelatedEvents` instance inside that scope and make it
              resolvable, so command handlers can inject it.
-          3. Silently ignore nested re-entrant activations (see below).
 
-        Re-entrancy: `command_scope` is opened twice for a single logical
-        command when a `ContextCommandPipeline` wraps a command dispatch.
-        Implementations must detect that case (for example, by checking a
-        contextvar) and skip opening a second scope.
+        If you already have an async context manager for the scope, wrap it
+        with `cq.middlewares.contextlib.AsyncContextManagerMiddleware` instead
+        of writing the middleware by hand.
         """
         ...
 

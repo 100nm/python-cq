@@ -11,7 +11,6 @@ from cq._core.dispatchers.pipe import (
     ConvertMethodSync,
 )
 from cq._core.message import Command, CommandBus, Query, QueryBus
-from cq._core.middlewares.scope import CommandDispatchScopeMiddleware
 
 
 class ContextCommandPipeline[C: Command](ContextPipeline[C]):
@@ -22,8 +21,6 @@ class ContextCommandPipeline[C: Command](ContextPipeline[C]):
     def __init__(self, di: DIAdapter) -> None:
         super().__init__(LazyDispatcher(CommandBus, di))
         self.__query_dispatcher = LazyDispatcher(QueryBus, di)
-        command_middleware = CommandDispatchScopeMiddleware(di)
-        self.add_middlewares(command_middleware)
 
     def add_static_query_step[Q: Query](self, query: Q, /) -> Self:
         return self.add_static_step(query, dispatcher=self.__query_dispatcher)
