@@ -10,7 +10,6 @@ from cq._core.handler import (
     SingleHandlerRegistry,
 )
 from cq._core.message import Command, Event, Query
-from cq._core.middlewares.scope import CommandDispatchScopeMiddleware
 
 
 class CQ:
@@ -57,8 +56,7 @@ class CQ:
 
     def new_command_bus(self) -> Bus[Command, Any]:
         bus = SimpleBus(self.__command_registry)
-        command_middleware = CommandDispatchScopeMiddleware(self.__di)
-        bus.add_middlewares(command_middleware)
+        bus.add_middlewares(self.__di.command_scope())
         return bus
 
     def new_event_bus(self) -> Bus[Event, None]:

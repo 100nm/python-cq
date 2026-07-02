@@ -1,15 +1,15 @@
 from collections.abc import AsyncIterator
-from contextlib import AsyncExitStack, asynccontextmanager
+from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any, AsyncContextManager, Awaitable, Callable
+from typing import Any, Awaitable, Callable
 
 from injection import Module, adefine_scope, mod
 from injection.exceptions import ScopeAlreadyDefinedError
 
 from cq._core.di import DIAdapter
-from cq._core.message import CommandBus, EventBus, QueryBus
-from cq._core.middleware import MiddlewareResult
+from cq._core.message import Command, CommandBus, EventBus, QueryBus
+from cq._core.middleware import Middleware, MiddlewareResult
 from cq._core.related_events import AnyIORelatedEvents, RelatedEvents
 
 __all__ = ("CQScope", "InjectionAdapter", "InjectionScopeMiddleware")
@@ -24,12 +24,11 @@ class InjectionAdapter(DIAdapter):
     module: Module = field(default_factory=mod)
     threadsafe: bool | None = field(default=None)
 
-    def command_scope(self) -> AsyncContextManager[None]:
-        return InjectionScopeMiddleware(  # type: ignore[return-value]
+    def command_scope(self) -> Middleware[[Command], Any]:
+        return InjectionScopeMiddleware(
             CQScope.COMMAND_DISPATCH,
-            exist_ok=True,
             threadsafe=self.threadsafe,
-        )._cm
+        )
 
     def lazy[T](self, tp: type[T], /) -> Callable[[], Awaitable[T]]:
         awaitable = self.module.aget_lazy_instance(tp, threadsafe=self.threadsafe)
@@ -83,12 +82,6 @@ class InjectionScopeMiddleware:
     threadsafe: bool | None = field(default=None, kw_only=True)
 
     async def __call__(self, /, *args: Any, **kwargs: Any) -> MiddlewareResult[Any]:
-        async with self._cm:  # type: ignore[attr-defined]
-            yield
-
-    @property
-    @asynccontextmanager
-    async def _cm(self) -> AsyncIterator[None]:
         async with AsyncExitStack() as stack:
             try:
                 await stack.enter_async_context(

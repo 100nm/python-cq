@@ -3,10 +3,12 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import Awaitable, Callable
 from contextlib import nullcontext
-from typing import TYPE_CHECKING, Any, AsyncContextManager, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+
+from cq.middlewares.contextlib import AsyncContextManagerMiddleware
 
 if TYPE_CHECKING:  # pragma: no cover
-    from cq import CommandBus, EventBus, QueryBus
+    from cq import Command, CommandBus, EventBus, Middleware, QueryBus
 
 
 @runtime_checkable
@@ -22,30 +24,19 @@ class DIAdapter(Protocol):
     __slots__ = ()
 
     @abstractmethod
-    def command_scope(self) -> AsyncContextManager[None]:
+    def command_scope(self) -> Middleware[[Command], Any]:
         """
-        Return an async context manager that delimits the lifetime of a
-        command dispatch.
+        Return a middleware that wraps each command dispatch.
 
         **Responsibilities**
 
-        The scope must at minimum manage the lifecycle of a ``RelatedEvents``
-        instance and register it so that it is resolvable via injection for
-        the duration of the scope.
+        The middleware must at minimum manage the lifecycle of a
+        ``RelatedEvents`` instance and register it so that it is resolvable
+        via injection for the duration of the dispatch.
 
-        **Nested calls**
-
-        ``command_scope`` is entered in two distinct situations:
-
-        1. Around a standard command dispatch (via
-           ``CommandDispatchScopeMiddleware``).
-        2. Around each step of a ``ContextCommandPipeline``, which itself
-           wraps a command dispatch.
-
-        This means two nested calls can occur for a single logical command.
-        Implementations must detect re-entrant activation (e.g. a scope
-        already active on the current task) and silently ignore the inner
-        call instead of opening a second, conflicting scope.
+        If you already have an async context manager for the scope, wrap it
+        with ``cq.middlewares.contextlib.AsyncContextManagerMiddleware``
+        instead of writing the middleware by hand.
         """
 
         raise NotImplementedError
@@ -97,8 +88,8 @@ class DIAdapter(Protocol):
 class NoDI(DIAdapter):
     __slots__ = ()
 
-    def command_scope(self) -> AsyncContextManager[None]:
-        return nullcontext()
+    def command_scope(self) -> Middleware[[Command], Any]:
+        return AsyncContextManagerMiddleware(nullcontext())
 
     def lazy[T](self, tp: type[T], /) -> Callable[[], Awaitable[T]]:
         tp_str = getattr(tp, "__name__", str(tp))
