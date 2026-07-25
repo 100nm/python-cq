@@ -42,6 +42,7 @@ from collections.abc import Awaitable, Callable
 from cq import CQ, Command, DIAdapter, CommandBus, EventBus, Middleware, QueryBus
 from typing import Any
 
+
 class MyDIAdapter(DIAdapter):
     def command_scope(self) -> Middleware[[Command], Any]:
         """
@@ -87,6 +88,7 @@ class MyDIAdapter(DIAdapter):
         dependencies. Used internally to build handler instances.
         """
         ...
+
 
 cq = CQ(MyDIAdapter()).register_defaults()
 ```

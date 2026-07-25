@@ -9,6 +9,7 @@ A pipeline runs a sequence of commands. Each step receives the result of the pre
 ```python
 from cq import ContextCommandPipeline
 
+
 class PaymentContext:
     transaction_id: int
 
@@ -24,8 +25,7 @@ class PaymentContext:
         return NotifyMerchantCommand(transaction_id=result.transaction_id)
 
     @pipeline.step
-    def _(self, result: MerchantNotifiedResult):
-        ...
+    def _(self, result: MerchantNotifiedResult): ...
 ```
 
 `ContextCommandPipeline()` uses the default `CQ` instance. If you manage your own `CQ` (see [Custom DI adapter](../di.md)), pass its DI adapter explicitly: `ContextCommandPipeline(cq.di)`.
@@ -97,8 +97,11 @@ from cq import ContextCommandPipeline
 from typing import ClassVar, Self
 from uuid import UUID
 
+
 class LinkOAuthAccountContext:
-    pipeline: ClassVar[ContextCommandPipeline[VerifyIDTokenCommand]] = ContextCommandPipeline()
+    pipeline: ClassVar[ContextCommandPipeline[VerifyIDTokenCommand]] = (
+        ContextCommandPipeline()
+    )
 
     def __init__(self, user_id: UUID, provider: OAuthProvider) -> None:
         self.user_id = user_id
@@ -126,7 +129,9 @@ A pipeline is itself a dispatcher. You can wrap it with middlewares the same way
 
 ```python
 class PaymentContext:
-    pipeline = ContextCommandPipeline().add_middlewares(timing_middleware, retry_middleware)
+    pipeline = ContextCommandPipeline().add_middlewares(
+        timing_middleware, retry_middleware
+    )
     # ...
 ```
 

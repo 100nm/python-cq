@@ -94,6 +94,7 @@ async def sentry_middleware(message):
     except Exception as exc:
         sentry_sdk.capture_exception(exc)
 
+
 pump = Pump(queue, command_bus).add_middlewares(sentry_middleware)
 ```
 
@@ -112,6 +113,7 @@ Note that `fail_silently=True` also swallows exceptions raised from a pump middl
 from cq import CommandBus, MemoryQueue
 from injection import inject
 from typing import Any
+
 
 @inject
 async def main(command_bus: CommandBus[Any]) -> None:

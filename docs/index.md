@@ -49,10 +49,12 @@ from cq import CommandBus, command_handler
 from dataclasses import dataclass
 from injection import inject
 
+
 @dataclass
 class CreateUserCommand:
     name: str
     email: str
+
 
 @command_handler
 class CreateUserHandler:
@@ -60,11 +62,13 @@ class CreateUserHandler:
         # ... persist the user, return its id
         return 42
 
+
 @inject
 async def main(bus: CommandBus[int]) -> None:
     command = CreateUserCommand(name="Ada", email="ada@example.com")
     user_id = await bus.dispatch(command)
     print(f"Created user {user_id}")
+
 
 asyncio.run(main())
 ```

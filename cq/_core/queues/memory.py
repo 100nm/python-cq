@@ -51,10 +51,10 @@ class MemoryQueue[T](Queue[T]):
         async with (
             Pump(self, dispatcher, fail_silently)
             .add_middlewares(*middlewares)
-            .draining(concurrency=concurrency, graceful=True)
+            .draining(concurrency=concurrency, graceful=True),
+            self,
         ):
-            async with self:
-                yield self
+            yield self
 
     async def send(self, message: T, /) -> None:
         await self.__producer.send(message)

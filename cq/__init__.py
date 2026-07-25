@@ -21,18 +21,17 @@ from ._core.queues.memory import MemoryQueue
 from ._core.related_events import AnyIORelatedEvents, RelatedEvents
 
 __all__ = (
-    "__cq__",
+    "CQ",
     "AnyCommandBus",
     "AnyIORelatedEvents",
     "Bus",
-    "CQ",
     "Command",
     "CommandBus",
     "Consumer",
     "ContextCommandPipeline",
     "ContextPipeline",
-    "Delivery",
     "DIAdapter",
+    "Delivery",
     "Dispatcher",
     "Event",
     "EventBus",
@@ -46,6 +45,7 @@ __all__ = (
     "QueryBus",
     "Queue",
     "RelatedEvents",
+    "__cq__",
     "command_handler",
     "event_handler",
     "new_command_bus",

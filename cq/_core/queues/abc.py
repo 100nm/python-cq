@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from collections.abc import AsyncIterable
-from typing import AsyncContextManager, Protocol, runtime_checkable
+from contextlib import AbstractAsyncContextManager
+from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -16,7 +17,7 @@ class Producer[T](Protocol):
 
 
 @runtime_checkable
-class Delivery[T](AsyncContextManager[T], Protocol):
+class Delivery[T](AbstractAsyncContextManager[T], Protocol):
     __slots__ = ()
 
 

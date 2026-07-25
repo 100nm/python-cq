@@ -98,7 +98,7 @@ class _GeneratorMiddleware[**P, T]:
             while True:
                 try:
                     value = await call_next(*args, **kwargs)
-                except BaseException as exc:
+                except BaseException as exc:  # noqa: BLE001
                     await generator.athrow(exc)
                 else:
                     await generator.asend(value)

@@ -9,13 +9,15 @@ Each bus can be customized by attaching listeners and middlewares. The recommend
 from cq import CommandBus, new_command_bus
 from injection import injectable
 
-async def listener(message):
-    ...
+
+async def listener(message): ...
+
 
 async def middleware(message):
     # runs before the handler
     result = yield
     # runs after the handler
+
 
 @injectable
 def command_bus_factory() -> CommandBus:
@@ -48,6 +50,7 @@ A middleware wraps handler execution. Use it to run logic before and after the h
 ```python
 import time
 
+
 async def timing_middleware(message):
     start = time.time()
     yield
@@ -65,6 +68,7 @@ If you need to read or substitute the return value, write a "classic" middleware
 ```python
 import time
 
+
 async def timing_middleware(call_next, message):
     start = time.time()
     result = await call_next(message)
@@ -81,12 +85,14 @@ Listeners and middlewares can also be classes with a `__call__` method, which is
 ```python
 from dataclasses import dataclass
 
+
 @dataclass
 class LogListener:
     logger: Logger
 
     async def __call__(self, message):
         self.logger.info(f"Received: {message}")
+
 
 @dataclass
 class TimingMiddleware:
@@ -96,6 +102,7 @@ class TimingMiddleware:
         start = time.time()
         yield
         await self.metrics.record(time.time() - start)
+
 
 @dataclass
 class ClassicTimingMiddleware:
@@ -140,8 +147,10 @@ If every attempt fails, the last exception is re-raised.
 from cq import new_command_bus
 from cq.middlewares.exc import CaptureExceptionMiddleware
 
+
 async def report(exception, message):
     sentry_sdk.capture_exception(exception)
+
 
 bus = new_command_bus()
 bus.add_middlewares(CaptureExceptionMiddleware(report, reraise=True))

@@ -14,7 +14,7 @@ class TestCaptureExceptionMiddleware:
     ) -> None:
         class Handler:
             async def handle(self, message: str) -> str:
-                raise Exception
+                raise Exception  # noqa: TRY002
 
             @classmethod
             async def async_factory(cls) -> Self:
@@ -38,7 +38,7 @@ class TestCaptureExceptionMiddleware:
     ) -> None:
         class Handler:
             async def handle(self, message: str) -> str:
-                raise Exception
+                raise Exception  # noqa: TRY002
 
             @classmethod
             async def async_factory(cls) -> Self:
@@ -54,7 +54,7 @@ class TestCaptureExceptionMiddleware:
 
         assert not captured.is_set()
 
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             await bus.dispatch("Hello world!")
 
         assert captured.is_set()

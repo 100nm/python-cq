@@ -9,6 +9,7 @@ A message is any Python object. Since messages are pure data containers, `datacl
 ```python
 from dataclasses import dataclass
 
+
 @dataclass
 class CreateUserCommand:
     name: str
@@ -24,10 +25,10 @@ A handler is a class with an async `handle` method that takes the message as its
 ```python
 from cq import command_handler
 
+
 @command_handler
 class CreateUserHandler:
-    async def handle(self, command: CreateUserCommand):
-        ...
+    async def handle(self, command: CreateUserCommand): ...
 ```
 
 The decorator inspects the annotation on the first parameter of `handle` to determine which message type the handler subscribes to. All constructor dependencies are resolved at runtime by the configured DI adapter.
@@ -40,12 +41,12 @@ Defining a handler as a `NamedTuple` gives you a concise, immutable declaration 
 from cq import command_handler
 from typing import NamedTuple
 
+
 @command_handler
 class CreateUserHandler(NamedTuple):
     repository: UserRepository
 
-    async def handle(self, command: CreateUserCommand):
-        ...
+    async def handle(self, command: CreateUserCommand): ...
 ```
 
 `UserRepository` will be resolved by the DI container when the handler is instantiated.
@@ -57,8 +58,10 @@ A handler registered for a base class (or a `Protocol`, or a generic alias) will
 ```python
 class DomainEvent: ...
 
+
 class UserCreatedEvent(DomainEvent):
     user_id: int
+
 
 @event_handler
 class AuditLogger:
@@ -78,10 +81,12 @@ from cq import command_handler
 from dataclasses import dataclass
 from typing import NamedTuple
 
+
 @dataclass
 class CreateUserCommand:
     name: str
     email: str
+
 
 @command_handler
 class CreateUserHandler(NamedTuple):
@@ -98,6 +103,7 @@ A command handler can inject a `RelatedEvents` object to publish events as part 
 
 ```python
 from cq import RelatedEvents, command_handler
+
 
 @command_handler
 class CreateUserHandler(NamedTuple):
@@ -126,9 +132,11 @@ from cq import query_handler
 from dataclasses import dataclass
 from typing import NamedTuple
 
+
 @dataclass
 class GetUserByIdQuery:
     user_id: int
+
 
 @query_handler
 class GetUserByIdHandler(NamedTuple):
@@ -147,9 +155,11 @@ from cq import event_handler
 from dataclasses import dataclass
 from typing import NamedTuple
 
+
 @dataclass
 class UserCreatedEvent:
     user_id: int
+
 
 @event_handler
 class SendWelcomeEmailHandler(NamedTuple):
@@ -157,6 +167,7 @@ class SendWelcomeEmailHandler(NamedTuple):
 
     async def handle(self, event: UserCreatedEvent):
         await self.email_service.send_welcome(event.user_id)
+
 
 @event_handler
 class TrackUserCreatedHandler(NamedTuple):
