@@ -183,7 +183,7 @@ class HandlerDecorator[I, O]:
             and issubclass(message_or_handler_type, Handler)
         ):
             return self.__decorator(
-                message_or_handler_type,
+                message_or_handler_type,  # type: ignore[arg-type]
                 fail_silently=fail_silently,
             )
 
