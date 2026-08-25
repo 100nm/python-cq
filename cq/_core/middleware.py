@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from inspect import isasyncgenfunction
 from typing import Any, Concatenate, Self, TypeGuard
 
-from cq._core.handler import HandleFunction, HandlerType
+from cq._core.routing.handler import HandleFunction, HandlerType
 from cq.exceptions import MiddlewareError
 
 type MiddlewareResult[T] = AsyncGenerator[None, T]

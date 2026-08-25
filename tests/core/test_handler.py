@@ -2,7 +2,7 @@ from typing import Any, NoReturn
 
 import pytest
 
-from cq._core.handler import HandlerDecorator, SingleHandlerRegistry
+from cq._core.routing.handler import HandlerDecorator, SingleHandlerRegistry
 
 
 class _Handler:

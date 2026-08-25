@@ -1,16 +1,16 @@
 from typing import TYPE_CHECKING, Any, Self, overload
 
-from cq import Dispatcher
 from cq._core.common.typing import Decorator
-from cq._core.di import DIAdapter
-from cq._core.dispatchers.lazy import LazyDispatcher
-from cq._core.dispatchers.pipe import (
+from cq._core.message import Command, CommandBus, Query, QueryBus
+from cq._core.routing.di import DIAdapter
+from cq._core.routing.dispatchers.abc import Dispatcher
+from cq._core.routing.dispatchers.lazy import LazyDispatcher
+from cq._core.routing.dispatchers.pipe import (
     ContextPipeline,
     ConvertMethod,
     ConvertMethodAsync,
     ConvertMethodSync,
 )
-from cq._core.message import Command, CommandBus, Query, QueryBus
 
 
 class ContextCommandPipeline[C: Command](ContextPipeline[C]):

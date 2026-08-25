@@ -28,7 +28,7 @@ class PaymentContext:
     def _(self, result: MerchantNotifiedResult): ...
 ```
 
-`ContextCommandPipeline()` uses the default `CQ` instance. If you manage your own `CQ` (see [Custom DI adapter](../di.md)), pass its DI adapter explicitly: `ContextCommandPipeline(cq.di)`.
+`ContextCommandPipeline()` uses the default `Router` instance. If you manage your own `Router` (see [Custom DI adapter](../di.md)), pass its DI adapter explicitly: `ContextCommandPipeline(router.di)`.
 
 ## Steps
 

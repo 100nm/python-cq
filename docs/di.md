@@ -5,33 +5,33 @@
 
 **python-cq** does not depend on any specific dependency injection container. Instead, it talks to DI through the `DIAdapter` protocol. Implement this protocol once and you can use the library with any container you already have in your project.
 
-## The `CQ` class
+## The `Router` class
 
-`CQ` ties together the handler registries and the DI adapter. The module-level decorators (`command_handler`, `event_handler`, `query_handler`) and bus factories (`new_command_bus`, `new_event_bus`, `new_query_bus`) all derive from a default `CQ` instance built at import time.
+`Router` ties together the handler registries and the DI adapter. The module-level decorators (`command_handler`, `event_handler`, `query_handler`) and bus factories (`new_command_bus`, `new_event_bus`, `new_query_bus`) all derive from a default `Router` instance built at import time.
 
-You create your own `CQ` instance to wire the library against a custom `DIAdapter`:
-
-```python
-from cq import CQ, ContextCommandPipeline
-
-cq = CQ(my_di_adapter).register_defaults()
-
-command_handler = cq.command_handler
-event_handler = cq.event_handler
-query_handler = cq.query_handler
-
-new_command_bus = cq.new_command_bus
-new_event_bus = cq.new_event_bus
-new_query_bus = cq.new_query_bus
-```
-
-When you build a `ContextCommandPipeline` against a non-default `CQ`, pass its DI adapter explicitly so the pipeline dispatches through the right buses:
+You create your own `Router` instance to wire the library against a custom `DIAdapter`:
 
 ```python
-ContextCommandPipeline(cq.di)
+from cq import Router, ContextCommandPipeline
+
+router = Router(my_di_adapter).register_defaults()
+
+command_handler = router.command_handler
+event_handler = router.event_handler
+query_handler = router.query_handler
+
+new_command_bus = router.new_command_bus
+new_event_bus = router.new_event_bus
+new_query_bus = router.new_query_bus
 ```
 
-If you use the default `CQ`, `ContextCommandPipeline()` (with no argument) is enough.
+When you build a `ContextCommandPipeline` against a non-default `Router`, pass its DI adapter explicitly so the pipeline dispatches through the right buses:
+
+```python
+ContextCommandPipeline(router.di)
+```
+
+If you use the default `Router`, `ContextCommandPipeline()` (with no argument) is enough.
 
 ## Implementing a `DIAdapter`
 
@@ -39,7 +39,7 @@ If you use the default `CQ`, `ContextCommandPipeline()` (with no argument) is en
 
 ```python
 from collections.abc import Awaitable, Callable
-from cq import CQ, Command, DIAdapter, CommandBus, EventBus, Middleware, QueryBus
+from cq import Router, Command, DIAdapter, CommandBus, EventBus, Middleware, QueryBus
 from typing import Any
 
 
@@ -90,7 +90,7 @@ class MyDIAdapter(DIAdapter):
         ...
 
 
-cq = CQ(MyDIAdapter()).register_defaults()
+router = Router(MyDIAdapter()).register_defaults()
 ```
 
 The reference implementation for python-injection lives in `cq.ext.injection.InjectionAdapter`. It is a good starting point if you need to model your own adapter on a working example.

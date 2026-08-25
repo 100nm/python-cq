@@ -1,18 +1,18 @@
 from collections.abc import KeysView
 from typing import Any, Self
 
-from cq._core.di import DIAdapter
-from cq._core.dispatchers.bus import Bus, SimpleBus, TaskBus
-from cq._core.handler import (
+from cq._core.message import Command, Event, Query
+from cq._core.routing.di import DIAdapter, NoDI
+from cq._core.routing.dispatchers.bus import Bus, SimpleBus, TaskBus
+from cq._core.routing.handler import (
     HandlerDecorator,
     HandlerRegistry,
     MultipleHandlerRegistry,
     SingleHandlerRegistry,
 )
-from cq._core.message import Command, Event, Query
 
 
-class CQ:
+class Router:
     __slots__ = ("__command_registry", "__di", "__event_registry", "__query_registry")
 
     __command_registry: HandlerRegistry[Command, Any]
@@ -20,8 +20,8 @@ class CQ:
     __event_registry: HandlerRegistry[Event, Any]
     __query_registry: HandlerRegistry[Query, Any]
 
-    def __init__(self, di: DIAdapter, /) -> None:
-        self.__di = di
+    def __init__(self, di: DIAdapter | None = None, /) -> None:
+        self.__di = di or NoDI()
         self.__command_registry = SingleHandlerRegistry()
         self.__event_registry = MultipleHandlerRegistry()
         self.__query_registry = SingleHandlerRegistry()

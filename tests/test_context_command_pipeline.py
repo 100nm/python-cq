@@ -1,11 +1,11 @@
-from cq import CQ, ContextCommandPipeline
+from cq import ContextCommandPipeline, Router
 from tests.helpers.history import HistoryMiddleware
 
 
 class TestContextCommandPipeline:
     async def test_dispatch_with_success_return_any(
         self,
-        cq: CQ,
+        router: Router,
         history: HistoryMiddleware,
     ) -> None:
         class Command0: ...
@@ -22,22 +22,22 @@ class TestContextCommandPipeline:
 
         class Baz: ...
 
-        @cq.command_handler
+        @router.command_handler
         class CommandHandler0:
             async def handle(self, command: Command0) -> None:
                 return
 
-        @cq.command_handler
+        @router.command_handler
         class CommandHandler1:
             async def handle(self, command: Command1) -> Foo:
                 return Foo()
 
-        @cq.command_handler
+        @router.command_handler
         class CommandHandler2:
             async def handle(self, command: Command2) -> Bar:
                 return Bar()
 
-        @cq.query_handler
+        @router.query_handler
         class QueryHandler:
             async def handle(self, query: Query) -> Baz:
                 return Baz()
@@ -47,7 +47,9 @@ class TestContextCommandPipeline:
             bar: Bar
             baz: Baz
 
-            pipeline: ContextCommandPipeline[Command0] = ContextCommandPipeline(cq.di)
+            pipeline: ContextCommandPipeline[Command0] = ContextCommandPipeline(
+                router.di
+            )
 
             pipeline.add_static_step(Command1())
 
