@@ -7,8 +7,8 @@ import anyio
 from anyio.abc import ObjectReceiveStream, ObjectSendStream
 
 from cq._core.middleware import Middleware
-from cq._core.pump import Pump
-from cq._core.queues.abc import Delivery, Queue
+from cq._core.queuing.pump import Pump
+from cq._core.queuing.queues.abc import Delivery, Queue
 
 
 class MemoryQueue[T](Queue[T]):
@@ -17,7 +17,7 @@ class MemoryQueue[T](Queue[T]):
     __consumer: ObjectReceiveStream[T]
     __producer: ObjectSendStream[T]
 
-    def __init__(self, maxsize: int = 0) -> None:
+    def __init__(self, maxsize: float = 0) -> None:
         self.__producer, self.__consumer = anyio.create_memory_object_stream(maxsize)
 
     async def __aenter__(self) -> Self:

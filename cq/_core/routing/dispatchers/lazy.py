@@ -2,8 +2,8 @@ from collections.abc import Awaitable, Callable
 from types import GenericAlias
 from typing import TypeAliasType
 
-from cq._core.di import DIAdapter
-from cq._core.dispatchers.abc import Dispatcher
+from cq._core.routing.di import DIAdapter
+from cq._core.routing.dispatchers.abc import Dispatcher
 
 
 class LazyDispatcher[I, O](Dispatcher[I, O]):

@@ -3,13 +3,13 @@ from typing import Any
 
 import pytest
 
-from cq._core.dispatchers.bus import SimpleBus
-from cq._core.handler import HandlerDecorator, SingleHandlerRegistry
 from cq._core.middleware import (
     MiddlewareGroup,
     MiddlewareResult,
     resolve_handler_source,
 )
+from cq._core.routing.dispatchers.bus import SimpleBus
+from cq._core.routing.handler import HandlerDecorator, SingleHandlerRegistry
 from cq.exceptions import MiddlewareError
 from tests.helpers.history import HistoryMiddleware
 

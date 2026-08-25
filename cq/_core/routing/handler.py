@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Protocol, Self, overload, runtime_checkab
 from type_analyzer import MatchingTypesConfig, iter_matching_types, matching_types
 
 from cq._core.common.typing import Decorator
-from cq._core.di import DIAdapter, NoDI
+from cq._core.routing.di import DIAdapter, NoDI
 
 type HandlerType[**P, T] = type[Handler[P, T]]
 type HandlerFactory[**P, T] = Callable[..., Awaitable[Handler[P, T]]]

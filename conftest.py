@@ -3,15 +3,15 @@ from typing import Any
 import pytest
 from injection import Module
 
-from cq import CQ, Bus, CommandBus, EventBus, QueryBus
-from cq._core.dispatchers.bus import SimpleBus
+from cq import Bus, CommandBus, EventBus, QueryBus, Router
+from cq._core.routing.dispatchers.bus import SimpleBus
 from cq.ext.injection import InjectionAdapter
 from tests.helpers.history import HistoryMiddleware
 
 
 @pytest.fixture(scope="function")
-def cq(injection_module: Module) -> CQ:
-    return CQ(InjectionAdapter(injection_module)).register_defaults()
+def router(injection_module: Module) -> Router:
+    return Router(InjectionAdapter(injection_module)).register_defaults()
 
 
 @pytest.fixture(scope="function")
@@ -21,20 +21,20 @@ def bus() -> Bus[Any, Any]:
 
 @pytest.fixture(scope="function", autouse=True)
 def ensure_test_dependencies(
-    cq: CQ,
+    router: Router,
     history: HistoryMiddleware,
     injection_module: Module,
 ) -> None:
     injection_module.injectable(
-        lambda: cq.new_command_bus().add_middlewares(history),
+        lambda: router.new_command_bus().add_middlewares(history),
         on=CommandBus,
     )
     injection_module.injectable(
-        lambda: cq.new_event_bus().add_middlewares(history),
+        lambda: router.new_event_bus().add_middlewares(history),
         on=EventBus,
     )
     injection_module.injectable(
-        lambda: cq.new_query_bus().add_middlewares(history),
+        lambda: router.new_query_bus().add_middlewares(history),
         on=QueryBus,
     )
 

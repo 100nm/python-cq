@@ -6,7 +6,7 @@ from typing import Any, Self
 import anyio
 
 from cq._core.middleware import Middleware, MiddlewareGroup
-from cq._core.queues.abc import Consumer
+from cq._core.queuing.queues.abc import Consumer
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)

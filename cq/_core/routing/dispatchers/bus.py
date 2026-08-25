@@ -5,15 +5,15 @@ from typing import Any, Protocol, Self, runtime_checkable
 import anyio
 from anyio.abc import TaskGroup
 
-from cq._core.dispatchers.abc import BaseDispatcher, Dispatcher
-from cq._core.handler import (
+from cq._core.middleware import Middleware
+from cq._core.routing.dispatchers.abc import BaseDispatcher, Dispatcher
+from cq._core.routing.handler import (
     HandleFunction,
     HandlerFactory,
     HandlerRegistry,
     MultipleHandlerRegistry,
     SingleHandlerRegistry,
 )
-from cq._core.middleware import Middleware
 
 type Listener[T] = Callable[[T], Awaitable[Any]]
 
@@ -82,7 +82,7 @@ class SimpleBus[I, O](BaseBus[I, O]):
         async with anyio.create_task_group() as task_group:
             self._trigger_listeners(message, task_group)
 
-        for handler in self._handlers_from(type(message)):
+        for handler in self._handlers_from(message.__class__):
             return await self._invoke(handler, message, handler.fail_silently)
 
         return NotImplemented
@@ -98,7 +98,7 @@ class TaskBus[I](BaseBus[I, None]):
         async with anyio.create_task_group() as task_group:
             self._trigger_listeners(message, task_group)
 
-            for handler in self._handlers_from(type(message)):
+            for handler in self._handlers_from(message.__class__):
                 task_group.start_soon(
                     self._invoke,
                     handler,
