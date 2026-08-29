@@ -5,7 +5,15 @@ from dataclasses import dataclass, field
 from functools import partial
 from inspect import Parameter, isclass, unwrap
 from inspect import signature as inspect_signature
-from typing import TYPE_CHECKING, Any, Protocol, Self, overload, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Concatenate,
+    Protocol,
+    Self,
+    overload,
+    runtime_checkable,
+)
 
 from type_analyzer import MatchingTypesConfig, iter_matching_types, matching_types
 
@@ -55,15 +63,18 @@ class HandlerRegistry[I, O](Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def handlers_from(self, message_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
+    def handlers_from(
+        self,
+        message_type: type[I],
+    ) -> Iterator[HandleFunction[Concatenate[I, ...], O]]:
         raise NotImplementedError
 
     @abstractmethod
     def subscribe(
         self,
         message_type: type[I],
-        handler_factory: HandlerFactory[[I], O],
-        handler_type: HandlerType[[I], O] | None = ...,
+        handler_factory: HandlerFactory[Concatenate[I, ...], O],
+        handler_type: HandlerType[Concatenate[I, ...], O] | None = ...,
         fail_silently: bool = ...,
     ) -> Self:
         raise NotImplementedError
@@ -71,7 +82,7 @@ class HandlerRegistry[I, O](Protocol):
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class MultipleHandlerRegistry[I, O](HandlerRegistry[I, O]):
-    __values: dict[type[I], list[HandleFunction[[I], O]]] = field(
+    __values: dict[type[I], list[HandleFunction[Concatenate[I, ...], O]]] = field(
         default_factory=partial(defaultdict, list),
         init=False,
     )
@@ -80,15 +91,18 @@ class MultipleHandlerRegistry[I, O](HandlerRegistry[I, O]):
     def message_types(self) -> KeysView[type[I]]:
         return self.__values.keys()
 
-    def handlers_from(self, message_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
+    def handlers_from(
+        self,
+        message_type: type[I],
+    ) -> Iterator[HandleFunction[Concatenate[I, ...], O]]:
         for key_type in _iter_key_types(message_type):
             yield from self.__values.get(key_type, ())
 
     def subscribe(
         self,
         message_type: type[I],
-        handler_factory: HandlerFactory[[I], O],
-        handler_type: HandlerType[[I], O] | None = None,
+        handler_factory: HandlerFactory[Concatenate[I, ...], O],
+        handler_type: HandlerType[Concatenate[I, ...], O] | None = None,
         fail_silently: bool = False,
     ) -> Self:
         function = HandleFunction.create(handler_factory, handler_type, fail_silently)
@@ -101,7 +115,7 @@ class MultipleHandlerRegistry[I, O](HandlerRegistry[I, O]):
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
 class SingleHandlerRegistry[I, O](HandlerRegistry[I, O]):
-    __values: dict[type[I], HandleFunction[[I], O]] = field(
+    __values: dict[type[I], HandleFunction[Concatenate[I, ...], O]] = field(
         default_factory=dict,
         init=False,
     )
@@ -110,7 +124,10 @@ class SingleHandlerRegistry[I, O](HandlerRegistry[I, O]):
     def message_types(self) -> KeysView[type[I]]:
         return self.__values.keys()
 
-    def handlers_from(self, message_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
+    def handlers_from(
+        self,
+        message_type: type[I],
+    ) -> Iterator[HandleFunction[Concatenate[I, ...], O]]:
         for key_type in _iter_key_types(message_type):
             function = self.__values.get(key_type, None)
             if function is not None:
@@ -119,8 +136,8 @@ class SingleHandlerRegistry[I, O](HandlerRegistry[I, O]):
     def subscribe(
         self,
         message_type: type[I],
-        handler_factory: HandlerFactory[[I], O],
-        handler_type: HandlerType[[I], O] | None = None,
+        handler_factory: HandlerFactory[Concatenate[I, ...], O],
+        handler_type: HandlerType[Concatenate[I, ...], O] | None = None,
         fail_silently: bool = False,
     ) -> Self:
         function = HandleFunction.create(handler_factory, handler_type, fail_silently)
@@ -195,12 +212,12 @@ class HandlerDecorator[I, O]:
 
     def __decorator(
         self,
-        wrapped: HandlerType[[I], O],
+        wrapped: HandlerType[Concatenate[I, ...], O],
         /,
         *,
         message_type: type[I] | None = None,
         fail_silently: bool = False,
-    ) -> HandlerType[[I], O]:
+    ) -> HandlerType[Concatenate[I, ...], O]:
         factory = self.di.wire(wrapped)
         message_type = message_type or _resolve_message_type(wrapped)
         self.registry.subscribe(message_type, factory, wrapped, fail_silently)
@@ -221,7 +238,9 @@ def _iter_key_types(message_type: Any) -> Iterator[Any]:
     return iter_matching_types(message_type, config)
 
 
-def _resolve_message_type[I, O](handler_type: HandlerType[[I], O]) -> type[I]:
+def _resolve_message_type[I, O](
+    handler_type: HandlerType[Concatenate[I, ...], O],
+) -> type[I]:
     fake_method = handler_type.handle.__get__(NotImplemented, handler_type)
     signature = inspect_signature(fake_method, eval_str=True)
 

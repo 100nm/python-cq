@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
+from typing import Any, Concatenate
 
 from injection import Module, adefine_scope, mod
 from injection.exceptions import ScopeAlreadyDefinedError
@@ -24,7 +24,7 @@ class InjectionAdapter(DIAdapter):
     module: Module = field(default_factory=mod)
     threadsafe: bool | None = field(default=None)
 
-    def command_scope(self) -> Middleware[[Command], Any]:
+    def command_scope(self) -> Middleware[Concatenate[Command, ...], Any]:
         return InjectionScopeMiddleware(
             CQScope.COMMAND_DISPATCH,
             threadsafe=self.threadsafe,

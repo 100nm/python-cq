@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Iterator
-from typing import Any, Protocol, Self, runtime_checkable
+from typing import Any, Concatenate, Protocol, Self, runtime_checkable
 
 import anyio
 from anyio.abc import TaskGroup
@@ -27,14 +27,14 @@ class Bus[I, O](Dispatcher[I, O], Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def add_middlewares(self, *middlewares: Middleware[[I], O]) -> Self:
+    def add_middlewares(self, *middlewares: Middleware[Concatenate[I, ...], O]) -> Self:
         raise NotImplementedError
 
     @abstractmethod
     def subscribe(
         self,
         message_type: type[I],
-        factory: HandlerFactory[[I], O],
+        factory: HandlerFactory[Concatenate[I, ...], O],
         fail_silently: bool = ...,
     ) -> Self:
         raise NotImplementedError
@@ -58,13 +58,16 @@ class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
     def subscribe(
         self,
         message_type: type[I],
-        factory: HandlerFactory[[I], O],
+        factory: HandlerFactory[Concatenate[I, ...], O],
         fail_silently: bool = False,
     ) -> Self:
         self.__registry.subscribe(message_type, factory, fail_silently=fail_silently)
         return self
 
-    def _handlers_from(self, message_type: type[I]) -> Iterator[HandleFunction[[I], O]]:
+    def _handlers_from(
+        self,
+        message_type: type[I],
+    ) -> Iterator[HandleFunction[Concatenate[I, ...], O]]:
         return self.__registry.handlers_from(message_type)
 
     def _trigger_listeners(self, message: I, /, task_group: TaskGroup) -> None:
