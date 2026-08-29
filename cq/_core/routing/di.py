@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import Awaitable, Callable
 from contextlib import nullcontext
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Concatenate, Protocol, runtime_checkable
 
 from cq.middlewares.contextlib import AsyncContextManagerMiddleware
 
@@ -24,7 +24,7 @@ class DIAdapter(Protocol):
     __slots__ = ()
 
     @abstractmethod
-    def command_scope(self) -> Middleware[[Command], Any]:
+    def command_scope(self) -> Middleware[Concatenate[Command, ...], Any]:
         """
         Return a middleware that wraps each command dispatch.
 
@@ -88,7 +88,7 @@ class DIAdapter(Protocol):
 class NoDI(DIAdapter):
     __slots__ = ()
 
-    def command_scope(self) -> Middleware[[Command], Any]:
+    def command_scope(self) -> Middleware[Concatenate[Command, ...], Any]:
         return AsyncContextManagerMiddleware(nullcontext())
 
     def lazy[T](self, tp: type[T], /) -> Callable[[], Awaitable[T]]:
