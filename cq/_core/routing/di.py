@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import Awaitable, Callable
-from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any, Concatenate, Protocol, runtime_checkable
-
-from cq.middlewares.contextlib import AsyncContextManagerMiddleware
 
 if TYPE_CHECKING:  # pragma: no cover
     from cq import Command, CommandBus, EventBus, Middleware, QueryBus
@@ -23,8 +20,7 @@ class DIAdapter(Protocol):
 
     __slots__ = ()
 
-    @abstractmethod
-    def command_scope(self) -> Middleware[Concatenate[Command, ...], Any]:
+    def command_scope(self) -> Middleware[Concatenate[Command, ...], Any] | None:
         """
         Return a middleware that wraps each command dispatch.
 
@@ -39,7 +35,7 @@ class DIAdapter(Protocol):
         instead of writing the middleware by hand.
         """
 
-        raise NotImplementedError
+        return None
 
     @abstractmethod
     def lazy[T](self, tp: type[T]) -> Callable[[], Awaitable[T]]:
@@ -87,9 +83,6 @@ class DIAdapter(Protocol):
 
 class NoDI(DIAdapter):
     __slots__ = ()
-
-    def command_scope(self) -> Middleware[Concatenate[Command, ...], Any]:
-        return AsyncContextManagerMiddleware(nullcontext())
 
     def lazy[T](self, tp: type[T], /) -> Callable[[], Awaitable[T]]:
         tp_str = getattr(tp, "__name__", str(tp))
