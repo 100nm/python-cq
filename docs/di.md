@@ -12,7 +12,7 @@
 You create your own `Router` instance to wire the library against a custom `DIAdapter`:
 
 ```python
-from cq import Router, ContextCommandPipeline
+from cq import Router
 
 router = Router(my_di_adapter).register_defaults()
 
@@ -25,37 +25,44 @@ new_event_bus = router.new_event_bus
 new_query_bus = router.new_query_bus
 ```
 
-When you build a `ContextCommandPipeline` against a non-default `Router`, pass its DI adapter explicitly so the pipeline dispatches through the right buses:
+Pipelines follow the same rule. Build them from your own `Router` so they dispatch through the right buses:
 
 ```python
-ContextCommandPipeline(router.di)
+from cq import ContextCommandPipeline
+
+
+class PaymentContext:
+    pipeline: ContextCommandPipeline[ValidateCartCommand] = router.command_pipeline()
 ```
 
 If you use the default `Router`, `ContextCommandPipeline()` (with no argument) is enough.
 
 ## Implementing a `DIAdapter`
 
-`DIAdapter` is a `Protocol` with four methods, three of them required:
+`DIAdapter` is a `Protocol` with four methods, of which only `lazy` and `wire` are required:
 
 ```python
 from collections.abc import Awaitable, Callable
 from cq import Router, Command, DIAdapter, CommandBus, EventBus, Middleware, QueryBus
-from typing import Any
+from typing import Any, Concatenate
 
 
 class MyDIAdapter(DIAdapter):
-    def command_scope(self) -> Middleware[[Command], Any]:
+    def command_scope(self) -> Middleware[Concatenate[Command, ...], Any] | None:
         """
         Return a middleware that wraps each command dispatch.
 
-        Responsibilities:
-          1. Open a DI scope for the duration of the command.
-          2. Build a `RelatedEvents` instance inside that scope and make it
-             resolvable, so command handlers can inject it.
+        It must manage the lifecycle of a `RelatedEvents` instance and make
+        it resolvable for as long as the dispatch lasts, so that command
+        handlers can inject it.
 
         If you already have an async context manager for the scope, wrap it
         with `cq.middlewares.contextlib.AsyncContextManagerMiddleware` instead
         of writing the middleware by hand.
+
+        Optional: the default implementation returns `None`, meaning no
+        middleware wraps the dispatch. Command handlers then have no
+        `RelatedEvents` to inject.
         """
         ...
 

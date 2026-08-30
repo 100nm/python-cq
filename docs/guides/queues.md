@@ -18,7 +18,7 @@ Any object that satisfies these protocols can act as a queue. The library provid
 
 ## `MemoryQueue`
 
-`MemoryQueue` is a thin wrapper around `anyio.create_memory_object_stream`. It is bounded by an optional `maxsize`, in which case `send` waits until a slot is available.
+`MemoryQueue` is a thin wrapper around `anyio.create_memory_object_stream`. `maxsize` is how many messages the queue buffers before `send` starts waiting for a free slot:
 
 ```python
 from cq import Command, MemoryQueue
@@ -26,6 +26,8 @@ from cq import Command, MemoryQueue
 queue: MemoryQueue[Command] = MemoryQueue(maxsize=100)
 await queue.send(command)
 ```
+
+The default, `maxsize=0`, means no buffer at all: `send` waits until a consumer takes the message. It keeps the producer from running ahead of the consumer, but it also means that `await queue.send(...)` blocks forever if nothing is draining the queue. Send from inside a draining context (see below), or pass `maxsize=math.inf` for an unbounded buffer.
 
 `MemoryQueue` is the right tool when producer and consumer live in the same process. It is not thread-safe: both `send` and consumption must run on the event loop that created the queue. For cross-process or persistent queues, implement `Queue` against your transport of choice.
 
