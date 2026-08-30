@@ -1,6 +1,6 @@
 # Dispatching messages
 
-**python-cq** exposes three bus types to dispatch messages to their handlers: `CommandBus`, `QueryBus`, and `EventBus`. Each takes a generic parameter that types the return value of `dispatch`.
+**python-cq** exposes three bus types to dispatch messages to their handlers: `CommandBus`, `QueryBus`, and `EventBus`. `CommandBus` and `QueryBus` take a generic parameter that types the value returned by `dispatch`. `EventBus` takes none, since it returns nothing.
 
 A bus instance is obtained from your DI container. The examples below assume the bus has already been resolved; see [Configuring a bus](configuring.md) for how to build and register one.
 

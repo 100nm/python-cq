@@ -33,6 +33,8 @@ class CreateUserHandler:
 
 The decorator inspects the annotation on the first parameter of `handle` to determine which message type the handler subscribes to. All constructor dependencies are resolved at runtime by the configured DI adapter.
 
+A command or a query accepts a single handler: registering a second one for the same message type raises a `RuntimeError` as soon as the module is imported. An event accepts any number of handlers.
+
 ### Using `NamedTuple` for handlers
 
 Defining a handler as a `NamedTuple` gives you a concise, immutable declaration of its dependencies:
@@ -115,7 +117,9 @@ class CreateUserHandler(NamedTuple):
         self.events.add(UserCreatedEvent(user_id=user.id))
 ```
 
-Calling `events.add(...)` schedules each event on a task group that lives for the duration of the command dispatch scope. Events are dispatched concurrently, and the command dispatch only returns once every scheduled event has been fully handled. If any event handler raises, the exception propagates back to the caller of the command.
+Calling `events.add(...)` schedules each event on a task group that lives for the duration of the command dispatch scope. Events are dispatched concurrently, and the command dispatch only returns once every scheduled event has been fully handled.
+
+If an event handler raises, the exception propagates back to the caller of the command, wrapped in two nested `ExceptionGroup`s: one for the events scheduled by the command, one for the handlers of that event. Catch it with `except*`, which matches through any level of nesting.
 
 You can add multiple events in one call:
 

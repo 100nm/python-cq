@@ -31,7 +31,7 @@ The same pattern applies to `QueryBus` and `EventBus`, with `new_query_bus()` an
 
 ## Listeners
 
-Listeners are fire-and-forget callables that receive the message. They are useful for logging, metrics, or any side effect that does not need to influence the handler.
+Listeners are callables that receive the message and give nothing back to the bus. They are useful for logging, metrics, or any side effect that does not need to influence the handler.
 
 ```python
 async def log_listener(message):
@@ -42,6 +42,8 @@ Listeners are scheduled in an `anyio` task group, so several listeners run concu
 
 * **`CommandBus` and `QueryBus`**: every listener must finish before the handler runs. The handler cannot start until listeners have settled, and `dispatch` returns the handler's value as soon as it completes.
 * **`EventBus`**: listeners and handlers share the same task group, so they all run concurrently. `dispatch` returns once everything has finished.
+
+A listener is fire-and-forget in the sense that the bus ignores its return value, not in the sense that it is isolated. An exception raised by a listener escapes `dispatch` inside an `ExceptionGroup`, and on a `CommandBus` or a `QueryBus` this happens before the handler is called, so the message is never handled. Guard fragile listener code with its own try/except if it must not affect the dispatch.
 
 ## Middlewares
 
@@ -77,6 +79,24 @@ async def timing_middleware(call_next, message):
 ```
 
 Both styles can be mixed freely in the same bus.
+
+### Execution order
+
+Middlewares nest around the handler like the layers of an onion. Within one call, they run in the order you list them: the first argument is the outermost layer, so it starts first and finishes last.
+
+```python
+bus.add_middlewares(outer, inner)
+# outer -> inner -> handler -> inner -> outer
+```
+
+Each subsequent call wraps whatever is already registered, so the middlewares added last end up outermost:
+
+```python
+bus.add_middlewares(a, b)  # a -> b -> handler
+bus.add_middlewares(c)  # c -> a -> b -> handler
+```
+
+The rule also covers the middleware that the DI adapter installs on the command bus. `new_command_bus()` registers the command scope before you add anything, so your own middlewares sit outside of it: they wrap the dispatch of every related event, but they cannot inject a dependency that only exists inside the scope, such as `RelatedEvents`.
 
 ## Class-based listeners and middlewares
 

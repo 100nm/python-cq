@@ -28,7 +28,7 @@ class PaymentContext:
     def _(self, result: MerchantNotifiedResult): ...
 ```
 
-`ContextCommandPipeline()` uses the default `Router` instance. If you manage your own `Router` (see [Custom DI adapter](../di.md)), pass its DI adapter explicitly: `ContextCommandPipeline(router.di)`.
+`ContextCommandPipeline()` uses the default `Router` instance. If you manage your own `Router` (see [Custom DI adapter](../di.md)), build the pipeline from it with `router.command_pipeline()` so that it dispatches through the right buses.
 
 ## Steps
 
