@@ -2,6 +2,7 @@ from collections.abc import KeysView
 from typing import Any, Self
 
 from cq._core.message import Command, Event, Query
+from cq._core.routing.command_pipeline import ContextCommandPipeline
 from cq._core.routing.di import DIAdapter, NoDI
 from cq._core.routing.dispatchers.bus import Bus, SimpleBus, TaskBus
 from cq._core.routing.handler import (
@@ -53,6 +54,9 @@ class Router:
     @property
     def query_types(self) -> KeysView[type[Query]]:
         return self.__query_registry.message_types
+
+    def command_pipeline[T](self) -> ContextCommandPipeline[T]:
+        return ContextCommandPipeline(self.__di)
 
     def new_command_bus(self) -> Bus[Command, Any]:
         bus = SimpleBus(self.__command_registry)
