@@ -47,9 +47,7 @@ class TestContextCommandPipeline:
             bar: Bar
             baz: Baz
 
-            pipeline: ContextCommandPipeline[Command0] = ContextCommandPipeline(
-                router.di
-            )
+            pipeline: ContextCommandPipeline[Command0] = router.command_pipeline()
 
             pipeline.add_static_step(Command1())
 

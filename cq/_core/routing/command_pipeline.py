@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Self, overload
+from typing import TYPE_CHECKING, Any, ClassVar, Self, overload
 
 from cq._core.common.typing import Decorator
 from cq._core.message import Command, CommandBus, Query, QueryBus
@@ -18,7 +18,10 @@ class ContextCommandPipeline[C: Command](ContextPipeline[C]):
 
     __query_dispatcher: Dispatcher[Query, Any]
 
-    def __init__(self, di: DIAdapter) -> None:
+    __default_di: ClassVar[DIAdapter]
+
+    def __init__(self, di: DIAdapter | None = None, /) -> None:
+        di = di or self.__default_di
         super().__init__(LazyDispatcher(CommandBus, di))
         self.__query_dispatcher = LazyDispatcher(QueryBus, di)
 
@@ -50,3 +53,7 @@ class ContextCommandPipeline[C: Command](ContextPipeline[C]):
         /,
     ) -> Any:
         return self.step(wrapped, dispatcher=self.__query_dispatcher)
+
+    @classmethod
+    def _set_default_di(cls, di: DIAdapter, /) -> None:
+        cls.__default_di = di
