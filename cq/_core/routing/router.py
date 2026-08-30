@@ -56,7 +56,11 @@ class Router:
 
     def new_command_bus(self) -> Bus[Command, Any]:
         bus = SimpleBus(self.__command_registry)
-        bus.add_middlewares(self.__di.command_scope())
+
+        command_scope_middleware = self.__di.command_scope()
+        if command_scope_middleware is not None:
+            bus.add_middlewares(command_scope_middleware)
+
         return bus
 
     def new_event_bus(self) -> Bus[Event, None]:
