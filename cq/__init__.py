@@ -16,6 +16,7 @@ from ._core.routing.command_pipeline import ContextCommandPipeline
 from ._core.routing.di import DIAdapter
 from ._core.routing.dispatchers.abc import Dispatcher
 from ._core.routing.dispatchers.bus import Bus
+from ._core.routing.dispatchers.functions import dispatch_sequentially
 from ._core.routing.dispatchers.pipe import ContextPipeline, Pipe
 from ._core.routing.router import Router
 
@@ -46,6 +47,7 @@ __all__ = (
     "Router",
     "__router__",
     "command_handler",
+    "dispatch_sequentially",
     "event_handler",
     "new_command_bus",
     "new_event_bus",
