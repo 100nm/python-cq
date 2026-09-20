@@ -1,6 +1,44 @@
 # Executing multiple commands
 
-In CQRS, the saga pattern is typically used to orchestrate a sequence of commands. Sagas are designed for distributed systems and can feel overengineered for a local workflow. **python-cq** offers `ContextCommandPipeline` as a lightweight alternative for chaining commands in-process.
+In CQRS, the saga pattern is typically used to orchestrate a sequence of commands. Sagas are designed for distributed systems and can feel overengineered for a local workflow. **python-cq** offers two lightweight alternatives for running several commands in-process:
+
+- `dispatch_sequentially` when the messages are already known up front and do not depend on each other's results.
+- `ContextCommandPipeline` when each command is built from the result of the previous one.
+
+## Dispatching messages one after another
+
+`dispatch_sequentially` takes a dispatcher and any number of messages. It dispatches them in the given order, waiting for each one to complete before starting the next, and returns the results as a tuple in the same order.
+
+A typical use is to drive the system into a known state through its own commands, for example when setting up a test:
+
+```python
+from cq import CommandBus, dispatch_sequentially
+
+bus: CommandBus[Any] = ...
+account_id = 42
+
+_, _, subscription = await dispatch_sequentially(
+    bus,
+    CreateAccountCommand(account_id=account_id, email="ada@example.com"),
+    SubscribeToPlanCommand(account_id=account_id, plan="pro"),
+    SuspendSubscriptionCommand(account_id=account_id, reason="payment_failed"),
+)
+```
+
+Each command goes through the real handlers and middlewares, so the resulting state is exactly what the application would produce. The dispatcher can be any object implementing `Dispatcher`: a `CommandBus`, a `QueryBus` or an `EventBus`. If a handler raises, the exception is propagated immediately and the remaining messages are not dispatched.
+
+The result tuple is typed with a variadic type parameter that cannot be inferred from the arguments, so annotate the target to get precise element types:
+
+```python
+results: tuple[Account, Subscription, Subscription] = await dispatch_sequentially(
+    bus,
+    create_account,
+    subscribe,
+    suspend,
+)
+```
+
+`dispatch_sequentially` dispatches each message exactly as `bus.dispatch` would, so the `NotImplemented` sentinel described in [Dispatching messages](dispatching.md#when-no-handler-is-registered) can appear in the tuple when a message has no handler.
 
 ## Pipeline basics
 
