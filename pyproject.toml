@@ -9,8 +9,8 @@ dev = [
     "ruff",
 ]
 docs = [
-    "mkdocs",
-    "mkdocs-material",
+    "ghp-import",
+    "zensical",
 ]
 test = [
     "pytest",

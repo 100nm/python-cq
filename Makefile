@@ -17,5 +17,5 @@ mypy:
 pytest:
 	uv run pytest
 
-mkdocs:
-	uv run mkdocs serve
+zensical:
+	uv run zensical serve
