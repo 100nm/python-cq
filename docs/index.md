@@ -1,7 +1,7 @@
 # python-cq
 
-[![PyPI - Version](https://img.shields.io/pypi/v/python-cq.svg?color=4051b5&style=for-the-badge)](https://pypi.org/project/python-cq)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/python-cq.svg?color=4051b5&style=for-the-badge)](https://pypistats.org/packages/python-cq)
+[![PyPI - Version](https://shieldcn.dev/pypi/v/python-cq.svg?variant=secondary)](https://pypi.org/project/python-cq)
+[![PyPI - Downloads](https://shieldcn.dev/pypi/dm/python-cq.svg?variant=secondary)](https://pypistats.org/packages/python-cq)
 
 **python-cq** is an async-first Python library for organizing code around CQRS. It separates reads (queries), writes (commands), and notifications (events) into dedicated message buses, and lets you plug in any dependency injection framework behind a small protocol.
 
