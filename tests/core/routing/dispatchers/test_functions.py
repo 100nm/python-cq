@@ -1,21 +1,30 @@
-from typing import Any, Self
+from typing import Self
 
-from cq import Bus, dispatch_sequentially
+from cq import dispatch_sequentially
+from cq._core.routing.dispatchers.bus import SimpleBus
 
 
-async def test_dispatch_sequentially_with_success_return_tuple(
-    bus: Bus[Any, Any],
-) -> None:
+async def test_dispatch_sequentially_with_success_returns_results_in_order() -> None:
+    dispatched = []
+
     class Handler:
         async def handle(self, message: str) -> str:
-            return message
+            dispatched.append(message)
+            return message.upper()
 
         @classmethod
-        async def async_factory(cls) -> Self:
+        async def factory(cls) -> Self:
             return cls()
 
-    bus.subscribe(str, Handler.async_factory)
+    bus = SimpleBus[str, str]().subscribe(str, Handler.factory)
 
-    messages = ("a", "b")
-    results: tuple[str, str] = await dispatch_sequentially(bus, *messages)
-    assert messages == results
+    results: tuple[str, str] = await dispatch_sequentially(bus, "first", "second")
+
+    assert results == ("FIRST", "SECOND")
+    assert dispatched == ["first", "second"]
+
+
+async def test_dispatch_sequentially_without_messages_returns_empty_tuple() -> None:
+    bus = SimpleBus[str, str]()
+
+    assert await dispatch_sequentially(bus) == ()

@@ -1,102 +1,168 @@
+from contextlib import nullcontext
 from typing import Any, Self
 
 import pytest
 
 from cq import MiddlewareResult
 from cq._core.routing.dispatchers.bus import SimpleBus, TaskBus
+from cq.middlewares.contextlib import ContextManagerMiddleware
+
+
+class _UpperHandler:
+    async def handle(self, message: str) -> str:
+        return message.upper()
+
+    @classmethod
+    async def factory(cls) -> Self:
+        return cls()
+
+
+class _FailingHandler:
+    async def handle(self, message: str) -> None:
+        raise ValueError(message)
+
+    @classmethod
+    async def factory(cls) -> Self:
+        return cls()
 
 
 class TestSimpleBus:
-    def test_add_middlewares_with_success_return_self(
-        self,
-        bus: SimpleBus[Any, Any],
-    ) -> None:
-        async def middleware(input_value: Any, /) -> MiddlewareResult[Any]:
-            _ = yield  # pragma: no cover
+    def test_add_listeners_with_success_returns_self(self) -> None:
+        async def listener(message: str) -> None: ...
+
+        bus = SimpleBus[str, str]()
+
+        assert bus.add_listeners(listener) is bus
+
+    def test_add_middlewares_with_success_returns_self(self) -> None:
+        middleware = ContextManagerMiddleware(nullcontext())
+        bus = SimpleBus[str, str]()
 
         assert bus.add_middlewares(middleware) is bus
 
-    def test_subscribe_with_success_return_self(self, bus: SimpleBus[Any, Any]) -> None:
-        assert bus.subscribe(str, _SomeHandler.async_factory) is bus
+    def test_subscribe_with_success_returns_self(self) -> None:
+        bus = SimpleBus[str, str]()
 
-    def test_subscribe_with_already_subscribed_raise_runtime_error(
-        self,
-        bus: SimpleBus[Any, Any],
-    ) -> None:
-        assert bus.subscribe(str, _SomeHandler.async_factory) is bus
+        assert bus.subscribe(str, _UpperHandler.factory) is bus
 
-        with pytest.raises(RuntimeError):
-            bus.subscribe(str, _SomeHandler.async_factory)
+    async def test_call_with_success_returns_handler_result(self) -> None:
+        bus = SimpleBus[str, str]().subscribe(str, _UpperHandler.factory)
 
-    async def test_dispatch_with_success_return_any(
-        self,
-        bus: SimpleBus[Any, str],
-    ) -> None:
-        bus.subscribe(str, _SomeHandler.async_factory)
-        input_value = "hello"
-        assert await bus.dispatch(input_value) == f"|{input_value}|"
+        assert await bus("hello") == "HELLO"
 
-    async def test_dispatch_with_unknown_input_type_return_not_implemented(
-        self,
-        bus: SimpleBus[Any, Any],
-    ) -> None:
+    async def test_dispatch_with_handler_returns_handler_result(self) -> None:
+        bus = SimpleBus[str, str]().subscribe(str, _UpperHandler.factory)
+
+        assert await bus.dispatch("hello") == "HELLO"
+
+    async def test_dispatch_without_handler_returns_not_implemented(self) -> None:
+        bus = SimpleBus[str, str]()
+
         assert await bus.dispatch("hello") is NotImplemented
 
-    async def test_dispatch_with_listeners_return_none(
+    async def test_dispatch_with_failing_handler_raises_error(self) -> None:
+        bus = SimpleBus[str, None]().subscribe(str, _FailingHandler.factory)
+
+        with pytest.raises(ValueError, match="hello"):
+            await bus.dispatch("hello")
+
+    async def test_dispatch_with_failing_handler_and_fail_silently_returns_not_implemented(
         self,
-        bus: SimpleBus[object, Any],
     ) -> None:
-        called = False
+        bus = SimpleBus[str, Any]().subscribe(
+            str,
+            _FailingHandler.factory,
+            fail_silently=True,
+        )
 
-        async def listener(_: Any) -> None:
-            nonlocal called
-            called = True
-
-        bus.add_listeners(listener)
         assert await bus.dispatch("hello") is NotImplemented
-        assert called
+
+    async def test_dispatch_with_listeners_calls_listeners(self) -> None:
+        listened = []
+
+        async def listener(message: str) -> None:
+            listened.append(message)
+
+        bus = SimpleBus[str, str]().add_listeners(listener, listener)
+        await bus.dispatch("hello")
+
+        assert listened == ["hello", "hello"]
+
+    async def test_dispatch_with_middlewares_wraps_handler(self) -> None:
+        results = []
+
+        async def middleware(message: str) -> MiddlewareResult[str]:
+            result = yield
+            results.append(result)
+
+        bus = (
+            SimpleBus[str, str]()
+            .subscribe(str, _UpperHandler.factory)
+            .add_middlewares(middleware)
+        )
+        await bus.dispatch("hello")
+
+        assert results == ["HELLO"]
 
 
 class TestTaskBus:
-    @pytest.fixture(scope="function")
-    def task_bus(self) -> TaskBus[Any]:
-        return TaskBus()
+    async def test_dispatch_with_several_handlers_calls_all_handlers(self) -> None:
+        handled = []
 
-    def test_subscribe_with_success_return_self(self, task_bus: TaskBus[Any]) -> None:
-        assert task_bus.subscribe(str, _SomeTaskHandler.async_factory) is task_bus
-        # Checks whether several handlers can be subscribed for the same input type
-        assert task_bus.subscribe(str, _SomeTaskHandler.async_factory) is task_bus
+        class FirstHandler:
+            async def handle(self, message: str) -> None:
+                handled.append(f"first {message}")
 
-    async def test_dispatch_with_success_return_none(
+            @classmethod
+            async def factory(cls) -> Self:
+                return cls()
+
+        class SecondHandler:
+            async def handle(self, message: str) -> None:
+                handled.append(f"second {message}")
+
+            @classmethod
+            async def factory(cls) -> Self:
+                return cls()
+
+        bus = (
+            TaskBus[str]()
+            .subscribe(str, FirstHandler.factory)
+            .subscribe(str, SecondHandler.factory)
+        )
+        await bus.dispatch("hello")
+
+        assert sorted(handled) == ["first hello", "second hello"]
+
+    async def test_dispatch_without_handler(self) -> None:
+        await TaskBus[str]().dispatch("hello")
+
+    async def test_dispatch_with_failing_handler_raises_exception_group(
         self,
-        task_bus: TaskBus[Any],
     ) -> None:
-        task_bus.subscribe(str, _SomeTaskHandler.async_factory)
+        bus = TaskBus[str]().subscribe(str, _FailingHandler.factory)
 
-        with pytest.raises(ExceptionGroup):
-            await task_bus.dispatch("hello")
+        with pytest.raises(ExceptionGroup) as exc_info:
+            await bus.dispatch("hello")
 
-    async def test_dispatch_with_unknown_input_type_return_none(
-        self,
-        task_bus: TaskBus[Any],
-    ) -> None:
-        # Do nothing
-        await task_bus.dispatch("hello")
+        assert exc_info.group_contains(ValueError, match="hello")
 
+    async def test_dispatch_with_failing_handler_and_fail_silently(self) -> None:
+        bus = TaskBus[str]().subscribe(
+            str,
+            _FailingHandler.factory,
+            fail_silently=True,
+        )
 
-class _SomeHandler:
-    async def handle(self, input_value: str, /) -> str:
-        return f"|{input_value}|"
+        await bus.dispatch("hello")
 
-    @classmethod
-    async def async_factory(cls) -> Self:
-        return cls()
+    async def test_dispatch_with_listeners_calls_listeners(self) -> None:
+        listened = []
 
+        async def listener(message: str) -> None:
+            listened.append(message)
 
-class _SomeTaskHandler:
-    async def handle(self, input_value: Any, /) -> None:
-        raise NotImplementedError
+        bus = TaskBus[str]().add_listeners(listener)
+        await bus.dispatch("hello")
 
-    @classmethod
-    async def async_factory(cls) -> Self:
-        return cls()
+        assert listened == ["hello"]
