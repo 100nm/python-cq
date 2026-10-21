@@ -21,6 +21,9 @@ class RetryMiddleware:
         delay: float = 0,
         exceptions: Sequence[type[BaseException]] = (Exception,),
     ) -> None:
+        if retry < 1:
+            raise ValueError(f"`retry` must be at least 1, got {retry}.")
+
         self.__delay = delay
         self.__exceptions = tuple(exceptions)
         self.__retry = retry
