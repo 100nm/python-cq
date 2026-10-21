@@ -1,50 +1,114 @@
-from dataclasses import dataclass, field
+import math
+from typing import Any
 
 import pytest
 from anyio import ClosedResourceError
 
-from cq import MemoryQueue
+from cq import MemoryQueue, MiddlewareResult
+
+
+async def _receive_all[T](queue: MemoryQueue[T]) -> list[T]:
+    messages = []
+
+    async for delivery in queue:
+        async with delivery as message:
+            messages.append(message)
+
+    return messages
 
 
 class TestMemoryQueue:
-    async def test_draining_with_success(self) -> None:
-        history = _History[str]()
+    async def test_aiter_with_success_yields_sent_messages(self) -> None:
+        queue = MemoryQueue[str](math.inf)
+        await queue.send("first")
+        await queue.send("second")
+        await queue.close()
 
-        async with MemoryQueue[str]().draining(history) as queue:
-            await queue.send("message_1")
-            await queue.send("message_2")
+        assert await _receive_all(queue) == ["first", "second"]
+
+    async def test_call_with_success_sends_message(self) -> None:
+        queue = MemoryQueue[str](math.inf)
+        await queue("message")
+        await queue.close()
+
+        assert await _receive_all(queue) == ["message"]
+
+    async def test_send_with_closed_queue_raises_closed_resource_error(self) -> None:
+        queue = MemoryQueue[str]()
+        await queue.close()
 
         with pytest.raises(ClosedResourceError):
-            await queue.send("message_3")
+            await queue.send("message")
 
-        assert len(history) == 2
+    async def test_send_with_exited_queue_raises_closed_resource_error(self) -> None:
+        async with MemoryQueue[str]() as queue:
+            pass
 
-    async def test_draining_with_fail_silently(self) -> None:
+        with pytest.raises(ClosedResourceError):
+            await queue.send("message")
+
+    async def test_draining_with_success_dispatches_sent_messages_then_closes_queue(
+        self,
+    ) -> None:
+        dispatched = []
+
         async def dispatcher(message: str) -> None:
-            raise NotImplementedError
+            dispatched.append(message)
 
-        async with MemoryQueue[str]().draining(dispatcher, fail_silently=True) as queue:
-            await queue.send("message_1")
-            await queue.send("message_2")
+        async with MemoryQueue[str]().draining(dispatcher) as queue:
+            await queue.send("first")
+            await queue.send("second")
 
-    async def test_draining_without_fail_silently(self) -> None:
+        assert dispatched == ["first", "second"]
+
+        with pytest.raises(ClosedResourceError):
+            await queue.send("third")
+
+    async def test_draining_with_middlewares_wraps_dispatcher(self) -> None:
+        calls = []
+
+        async def middleware(message: str) -> MiddlewareResult[Any]:
+            calls.append(f"before {message}")
+            yield
+            calls.append(f"after {message}")
+
         async def dispatcher(message: str) -> None:
-            raise NotImplementedError
+            calls.append(f"dispatch {message}")
 
-        with pytest.raises(ExceptionGroup):
-            async with MemoryQueue[str]().draining(
-                dispatcher,
-                fail_silently=False,
-            ) as queue:
+        queue = MemoryQueue[str]()
+
+        async with queue.draining(dispatcher, middlewares=[middleware]):
+            await queue.send("message")
+
+        assert calls == ["before message", "dispatch message", "after message"]
+
+    async def test_draining_with_dispatcher_error_raises_exception_group(
+        self,
+    ) -> None:
+        async def dispatcher(message: str) -> None:
+            raise ValueError(message)
+
+        queue = MemoryQueue[str]()
+
+        with pytest.raises(ExceptionGroup) as exc_info:
+            async with queue.draining(dispatcher):
                 await queue.send("message")
 
+        assert exc_info.group_contains(ValueError, match="message")
 
-@dataclass
-class _History[T]:
-    __records: list[T] = field(default_factory=list, init=False)
+    async def test_draining_with_dispatcher_error_and_fail_silently_dispatches_next_messages(
+        self,
+    ) -> None:
+        dispatched = []
 
-    async def __call__(self, message: T) -> None:
-        self.__records.append(message)
+        async def dispatcher(message: str) -> None:
+            dispatched.append(message)
+            raise ValueError(message)
 
-    def __len__(self) -> int:
-        return len(self.__records)
+        queue = MemoryQueue[str]()
+
+        async with queue.draining(dispatcher, fail_silently=True):
+            await queue.send("first")
+            await queue.send("second")
+
+        assert dispatched == ["first", "second"]

@@ -1,75 +1,87 @@
 from cq import ContextCommandPipeline, Router
-from tests.helpers.history import HistoryMiddleware
+
+
+class _CreateCommand: ...
+
+
+class _PublishCommand: ...
+
+
+class _Created: ...
+
+
+class _Published: ...
+
+
+class _FindQuery: ...
+
+
+class _Found: ...
 
 
 class TestContextCommandPipeline:
-    async def test_dispatch_with_success_return_any(
+    async def test_dispatch_with_query_step_dispatches_converted_message_as_query(
         self,
         router: Router,
-        history: HistoryMiddleware,
     ) -> None:
-        class Command0: ...
-
-        class Command1: ...
-
-        class Command2: ...
-
-        class Query: ...
-
-        class Foo: ...
-
-        class Bar: ...
-
-        class Baz: ...
-
         @router.command_handler
-        class CommandHandler0:
-            async def handle(self, command: Command0) -> None:
-                return
-
-        @router.command_handler
-        class CommandHandler1:
-            async def handle(self, command: Command1) -> Foo:
-                return Foo()
-
-        @router.command_handler
-        class CommandHandler2:
-            async def handle(self, command: Command2) -> Bar:
-                return Bar()
+        class CreateHandler:
+            async def handle(self, command: _CreateCommand) -> _Created:
+                return _Created()
 
         @router.query_handler
-        class QueryHandler:
-            async def handle(self, query: Query) -> Baz:
-                return Baz()
+        class FindHandler:
+            async def handle(self, query: _FindQuery) -> _Found:
+                return _Found()
+
+        @router.command_handler
+        class PublishHandler:
+            async def handle(self, command: _PublishCommand) -> _Published:
+                return _Published()
 
         class Context:
-            foo: Foo
-            bar: Bar
-            baz: Baz
+            created: _Created
+            found: _Found
 
-            pipeline: ContextCommandPipeline[Command0] = router.command_pipeline()
-
-            pipeline.add_static_step(Command1())
-
-            @pipeline.step
-            def _(self, foo: Foo) -> Command2:
-                self.foo = foo
-                return Command2()
+            pipeline: ContextCommandPipeline[_CreateCommand] = router.command_pipeline()
 
             @pipeline.query_step
-            def _(self, bar: Bar) -> Query:
-                self.bar = bar
-                return Query()
+            def _(self, created: _Created) -> _FindQuery:
+                self.created = created
+                return _FindQuery()
 
             @pipeline.step
-            async def _(self, baz: Baz) -> None:
-                self.baz = baz
+            async def _(self, found: _Found) -> _PublishCommand:
+                self.found = found
+                return _PublishCommand()
 
-        cmd = Command0()
-        ctx = await Context.pipeline(cmd)
+        context = await Context.pipeline.dispatch(_CreateCommand())
 
-        assert isinstance(ctx, Context)
-        assert isinstance(ctx.foo, Foo)
-        assert isinstance(ctx.bar, Bar)
-        assert isinstance(ctx.baz, Baz)
-        assert len(history.records) == 4
+        assert isinstance(context.created, _Created)
+        assert isinstance(context.found, _Found)
+
+    async def test_dispatch_with_static_query_step_dispatches_query(
+        self,
+        router: Router,
+    ) -> None:
+        queries = []
+
+        @router.command_handler
+        class CreateHandler:
+            async def handle(self, command: _CreateCommand) -> None: ...
+
+        @router.query_handler
+        class FindHandler:
+            async def handle(self, query: _FindQuery) -> None:
+                queries.append(query)
+
+        query = _FindQuery()
+
+        class Context:
+            pipeline: ContextCommandPipeline[_CreateCommand] = (
+                router.command_pipeline().add_static_query_step(query)
+            )
+
+        await Context.pipeline.dispatch(_CreateCommand())
+
+        assert queries == [query]

@@ -1,10 +1,9 @@
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, Self
 
 import pytest
 
-from cq import Bus
+from cq._core.middleware import MiddlewareGroup
 from cq.middlewares.contextlib import (
     AsyncContextManagerMiddleware,
     ContextManagerMiddleware,
@@ -12,114 +11,86 @@ from cq.middlewares.contextlib import (
 
 
 class TestAsyncContextManagerMiddleware:
-    async def test_call_with_success(self, bus: Bus[Any, Any]) -> None:
-        events: list[str] = []
+    async def test_call_with_success_enters_context_around_handler(self) -> None:
+        calls = []
 
         @asynccontextmanager
         async def context() -> AsyncIterator[None]:
-            events.append("enter")
-            try:
-                yield
-            finally:
-                events.append("exit")
+            calls.append("enter")
+            yield
+            calls.append("exit")
 
-        class Handler:
-            async def handle(self, message: str) -> None:
-                events.append("handle")
+        async def handler() -> None:
+            calls.append("handler")
 
-            @classmethod
-            async def async_factory(cls) -> Self:
-                return cls()
+        middleware = AsyncContextManagerMiddleware(context())
+        await MiddlewareGroup[[], None]().add(middleware).invoke(handler)
 
-        bus.add_middlewares(AsyncContextManagerMiddleware(context()))
-        bus.subscribe(str, Handler.async_factory)
+        assert calls == ["enter", "handler", "exit"]
 
-        await bus.dispatch("Hello world!")
-        assert events == ["enter", "handle", "exit"]
-
-    async def test_call_with_handler_error_raise_value_error(
+    async def test_call_with_handler_error_raises_error_inside_context(
         self,
-        bus: Bus[Any, Any],
     ) -> None:
-        events: list[str] = []
+        errors = []
 
         @asynccontextmanager
         async def context() -> AsyncIterator[None]:
-            events.append("enter")
             try:
                 yield
-            finally:
-                events.append("exit")
+            except ValueError as exc:
+                errors.append(exc)
+                raise
 
-        class Handler:
-            async def handle(self, message: str) -> None:
-                raise ValueError(message)
+        async def handler() -> None:
+            raise ValueError("handler failed")
 
-            @classmethod
-            async def async_factory(cls) -> Self:
-                return cls()
+        middleware = AsyncContextManagerMiddleware(context())
+        group = MiddlewareGroup[[], None]().add(middleware)
 
-        bus.add_middlewares(AsyncContextManagerMiddleware(context()))
-        bus.subscribe(str, Handler.async_factory)
+        with pytest.raises(ValueError, match="handler failed") as exc_info:
+            await group.invoke(handler)
 
-        with pytest.raises(ValueError):
-            await bus.dispatch("Hello world!")
-
-        assert events == ["enter", "exit"]
+        assert errors == [exc_info.value]
 
 
 class TestContextManagerMiddleware:
-    async def test_call_with_success(self, bus: Bus[Any, Any]) -> None:
-        events: list[str] = []
+    async def test_call_with_success_enters_context_around_handler(self) -> None:
+        calls = []
 
         @contextmanager
         def context() -> Iterator[None]:
-            events.append("enter")
-            try:
-                yield
-            finally:
-                events.append("exit")
+            calls.append("enter")
+            yield
+            calls.append("exit")
 
-        class Handler:
-            async def handle(self, message: str) -> None:
-                events.append("handle")
+        async def handler() -> None:
+            calls.append("handler")
 
-            @classmethod
-            async def async_factory(cls) -> Self:
-                return cls()
+        middleware = ContextManagerMiddleware(context())
+        await MiddlewareGroup[[], None]().add(middleware).invoke(handler)
 
-        bus.add_middlewares(ContextManagerMiddleware(context()))
-        bus.subscribe(str, Handler.async_factory)
+        assert calls == ["enter", "handler", "exit"]
 
-        await bus.dispatch("Hello world!")
-        assert events == ["enter", "handle", "exit"]
-
-    async def test_call_with_handler_error_raise_value_error(
+    async def test_call_with_handler_error_raises_error_inside_context(
         self,
-        bus: Bus[Any, Any],
     ) -> None:
-        events: list[str] = []
+        errors = []
 
         @contextmanager
         def context() -> Iterator[None]:
-            events.append("enter")
             try:
                 yield
-            finally:
-                events.append("exit")
+            except ValueError as exc:
+                errors.append(exc)
+                raise
 
-        class Handler:
-            async def handle(self, message: str) -> None:
-                raise ValueError(message)
+        async def handler() -> None:
+            raise ValueError("handler failed")
 
-            @classmethod
-            async def async_factory(cls) -> Self:
-                return cls()
+        middleware = ContextManagerMiddleware(context())
+        group = MiddlewareGroup[[], None]().add(middleware)
 
-        bus.add_middlewares(ContextManagerMiddleware(context()))
-        bus.subscribe(str, Handler.async_factory)
+        with pytest.raises(ValueError, match="handler failed") as exc_info:
+            await group.invoke(handler)
 
-        with pytest.raises(ValueError):
-            await bus.dispatch("Hello world!")
-
-        assert events == ["enter", "exit"]
+        assert errors == [exc_info.value]

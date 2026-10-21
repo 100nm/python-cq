@@ -25,7 +25,7 @@ class AnyIORelatedEvents(RelatedEvents):
     task_group: TaskGroup = field(default_factory=create_task_group)
     history: list[Event] = field(default_factory=list, init=False)
 
-    def __bool__(self) -> bool:  # pragma: no cover
+    def __bool__(self) -> bool:
         return bool(self.history)
 
     async def __aenter__(self) -> Self:
