@@ -46,12 +46,15 @@ A pipeline runs a sequence of commands. Each step receives the result of the pre
 
 ```python
 from cq import ContextCommandPipeline
+from typing import ClassVar
 
 
 class PaymentContext:
     transaction_id: int
 
-    pipeline: ContextCommandPipeline[ValidateCartCommand] = ContextCommandPipeline()
+    pipeline: ClassVar[ContextCommandPipeline[ValidateCartCommand]] = (
+        ContextCommandPipeline()
+    )
 
     @pipeline.step
     def _(self, result: CartValidatedResult) -> CreateTransactionCommand:
@@ -66,6 +69,8 @@ class PaymentContext:
     def _(self, result: MerchantNotifiedResult): ...
 ```
 
+Annotate the pipeline with `ClassVar`: if the context is a dataclass, a plain annotation would turn the pipeline into a field.
+
 The pipeline resolves `CommandBus` and `QueryBus` from the DI container the first time it dispatches, so the buses you configure in your container are the ones it uses. If you manage your own `Router` (see [Custom DI adapter](di.md)), build the pipeline with `router.command_pipeline()` instead.
 
 ### Steps
@@ -76,11 +81,11 @@ A step that returns `None` stops the pipeline. This is the natural way to write 
 
 ```python
 @pipeline.step
-def _(self, result: ValidationResult):
-    if result.is_valid:
-        return PersistCommand(...)
+def _(self, result: ValidationResult) -> PersistCommand | None:
+    if not result.is_valid:
+        return None  # stop here, skip the rest of the pipeline
 
-    return None  # stop here, skip the rest of the pipeline
+    return PersistCommand(...)
 ```
 
 ### Query steps
@@ -99,7 +104,7 @@ When a step does not depend on the previous result, declare it with `add_static_
 
 ```python
 class WarmCacheContext:
-    pipeline: ContextCommandPipeline[StartCommand] = ContextCommandPipeline()
+    pipeline: ClassVar[ContextCommandPipeline[StartCommand]] = ContextCommandPipeline()
 
     pipeline.add_static_step(LoadConfigCommand())
     pipeline.add_static_query_step(GetActiveUsersQuery())
@@ -121,7 +126,7 @@ async def process_payment(cart_id: int) -> int:
     return context.transaction_id
 ```
 
-Each run gets its own context instance, so attributes set in one run do not leak into the next. The context class is instantiated without arguments in this form.
+Each run gets its own context instance, so attributes set in one run do not leak into the next. The instance is created when `Context.pipeline` is accessed, not when it is called: keeping `run = Context.pipeline` and calling it twice reuses the same instance. The context class is instantiated without arguments in this form.
 
 ### Seeding the context
 
@@ -158,7 +163,7 @@ class LinkOAuthAccountContext:
         return await cls(user_id, command.provider).pipeline(command)
 ```
 
-The initial `VerifyIDTokenCommand` only carries the token. Once the OAuth identity is verified, the seeded `user_id` (taken from the auth context) is used by the step that builds `LinkOAuthAccountCommand`. `provider` is read from the input command, so callers only pass `user_id` and the command to `run`.
+The initial `VerifyIDTokenCommand` carries the token and the provider, but not the user. Once the OAuth identity is verified, the step that builds `LinkOAuthAccountCommand` uses the seeded `user_id` (taken from the auth context) and `provider` (read from the input command), so callers only pass `user_id` and the command to `run`.
 
 ### Middlewares
 
@@ -166,9 +171,11 @@ A pipeline accepts middlewares with `add_middlewares`, with the same syntax as a
 
 ```python
 class PaymentContext:
-    pipeline = ContextCommandPipeline().add_middlewares(
-        timing_middleware,
-        transaction_middleware,
+    pipeline: ClassVar[ContextCommandPipeline[ValidateCartCommand]] = (
+        ContextCommandPipeline().add_middlewares(
+            timing_middleware,
+            transaction_middleware,
+        )
     )
 ```
 

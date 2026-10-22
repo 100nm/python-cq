@@ -32,7 +32,7 @@ async with Pump(queue, event_bus).draining(graceful=True):
 
 ## `MemoryQueue.draining`
 
-For a `MemoryQueue`, `draining` combines both steps: it opens a graceful pump, yields the queue, and closes it on exit. When the block ends, every message sent inside it has been processed:
+For a `MemoryQueue`, `draining` combines both steps: it opens a graceful pump, yields the queue, and closes it on exit, so the queue cannot be reused afterwards. When the block ends, every message sent inside it has been processed:
 
 ```python
 from cq import MemoryQueue
@@ -49,7 +49,7 @@ async with MemoryQueue().draining(event_bus) as queue:
 
 ## Errors
 
-By default, an exception raised while processing a message stops the pump and propagates out of `draining`, inside an `ExceptionGroup` since the pump runs in a task group. Set `fail_silently=True` to swallow individual failures and keep consuming the rest of the queue:
+By default, an exception raised while processing a message stops the pump, cancels the code running inside the `draining` block, and propagates out of `draining`, inside an `ExceptionGroup` since the pump runs in a task group. Set `fail_silently=True` to swallow individual failures and keep consuming the rest of the queue:
 
 ```python
 Pump(queue, event_bus, fail_silently=True)
@@ -95,11 +95,11 @@ async def timing_middleware(call_next, message):
 pump = Pump(queue, event_bus).add_middlewares(sentry_middleware, timing_middleware)
 ```
 
-These are the same middlewares as on a bus, so everything described in the [routing middlewares guide](../routing/middlewares.md) applies, including the built-in ones and the execution order.
+These are the same middlewares as on a bus, so everything described in the [routing middlewares guide](../routing/middlewares.md) applies, including the built-in ones and the execution order. The exception is `resolve_handler_source`, which needs a handler behind `call_next` and therefore only works on a bus.
 
 When the dispatcher is a bus, both stacks apply. Put each concern where it belongs:
 
-* **On the pump**: what is tied to the consumption cycle, such as reporting failures that escape the dispatcher or capping concurrent dispatches when `concurrency > 1`.
+* **On the pump**: what is tied to the consumption cycle, such as reporting failures that escape the dispatcher.
 * **On the bus**: what is tied to handling the message, such as validation, business retries, or transactional boundaries.
 
 `fail_silently=True` also swallows exceptions raised by a pump middleware, so a middleware that means to stop the pump is suppressed in that mode.

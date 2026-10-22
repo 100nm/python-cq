@@ -3,7 +3,7 @@
 !!! note
     This guide assumes the `[injection]` extra is installed. If you use a different DI framework, register the factories below with your own container instead of `@injectable`.
 
-The buses resolved by default have no listeners and no middlewares. To customize one, write a factory that builds the bus with `new_command_bus()`, `new_query_bus()`, or `new_event_bus()`, configures it, and registers it in the DI container:
+The buses resolved by default have no listeners and no middlewares of your own. To customize one, write a factory that builds the bus with `new_command_bus()`, `new_query_bus()`, or `new_event_bus()`, configures it, and registers it in the DI container:
 
 ```python
 from cq import CommandBus, new_command_bus
@@ -19,6 +19,8 @@ def command_bus_factory() -> CommandBus:
 ```
 
 Your factory takes precedence over the default registration, so every handler, middleware, or function that depends on `CommandBus` now receives the configured bus. The same pattern applies to `QueryBus` and `EventBus`.
+
+Annotate the factory with the bare `CommandBus`, as the default registration does. A parameterized annotation such as `CommandBus[Any]` registers a different type, and the default bus keeps being injected.
 
 `new_command_bus()` returns a bus that already wraps each dispatch in the command scope of the DI adapter. Always start from it rather than building a bus by hand, or `RelatedEvents` will not be available to your command handlers.
 

@@ -44,6 +44,7 @@ The return annotation for these middlewares is `MiddlewareResult[T]`, where `T` 
 
 ```python
 from cq import MiddlewareResult
+from typing import Any
 
 
 async def timing_middleware(message: Any) -> MiddlewareResult[Any]:
@@ -53,7 +54,7 @@ async def timing_middleware(message: Any) -> MiddlewareResult[Any]:
 
 ## Classic middlewares
 
-When you need to replace the return value, or decide whether the handler runs at all, write a "classic" middleware. It takes `call_next` as its first argument and returns the value it wants to expose to the caller:
+When you need to replace the return value, or to skip the handler and return something else instead, write a "classic" middleware. It takes `call_next` as its first argument and returns the value it wants to expose to the caller:
 
 ```python
 async def cache_middleware(call_next, query):
@@ -69,17 +70,21 @@ Both styles can be mixed freely on the same bus. `Middleware` is the type alias 
 
 ### Finding the handler
 
-`resolve_handler_source(call_next)` returns the handler class behind `call_next`, so a classic middleware on a bus can read metadata from it, such as a class attribute or a marker set by your own decorator:
+`resolve_handler_source(call_next)` returns the handler class behind `call_next`, so a classic middleware knows which handler is about to run, typically to log or trace it:
 
 ```python
 from cq import resolve_handler_source
 
 
-async def permission_middleware(call_next, message):
+async def logging_middleware(call_next, message):
     handler_type = resolve_handler_source(call_next)
-    check_permissions(getattr(handler_type, "required_permissions", ()))
+    logger.info("%s handles %r", handler_type.__name__, message)
     return await call_next(message)
 ```
+
+The class also gives access to metadata declared on the handler, such as a class attribute or a marker set by your own decorator.
+
+It only works on a bus. On a `Pump` or a pipeline, there is no handler behind `call_next`, and it raises an `AttributeError`.
 
 ## Class-based middlewares
 
@@ -103,8 +108,7 @@ class TimingMiddleware:
 class CacheMiddleware:
     cache: Cache
 
-    async def __call__(self, call_next, query):
-        ...
+    async def __call__(self, call_next, query): ...
 ```
 
 If you build these classes through your DI container (for example as parameters of the bus factory), you get the same constructor injection as for handlers.

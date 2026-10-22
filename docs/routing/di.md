@@ -31,7 +31,9 @@ Pipelines follow the same rule. Build them from your router so they resolve the 
 
 ```python
 class PaymentContext:
-    pipeline: ContextCommandPipeline[ValidateCartCommand] = router.command_pipeline()
+    pipeline: ClassVar[ContextCommandPipeline[ValidateCartCommand]] = (
+        router.command_pipeline()
+    )
 ```
 
 ## Implementing a `DIAdapter`
@@ -97,7 +99,8 @@ router = Router(MyDIAdapter()).register_defaults()
 `AnyIORelatedEvents` is the ready-made `RelatedEvents` implementation. It is an async context manager that takes the function used to emit each event, usually an `EventBus`, and waits for every scheduled event on exit. A command scope typically opens one per dispatch and exposes it to the container:
 
 ```python
-from cq import AnyIORelatedEvents, MiddlewareResult
+from cq import AnyIORelatedEvents, EventBus, MiddlewareResult, RelatedEvents
+from typing import Any
 
 
 async def command_scope_middleware(command) -> MiddlewareResult[Any]:

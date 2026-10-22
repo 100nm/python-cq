@@ -73,11 +73,13 @@ A handler registered for a base class also receives every subclass of that type.
 
 ```python
 from cq import event_handler
+from dataclasses import dataclass
 
 
 class DomainEvent: ...
 
 
+@dataclass
 class UserCreatedEvent(DomainEvent):
     user_id: int
 
@@ -90,6 +92,8 @@ class AuditLogger:
 ```
 
 Resolution walks the message's MRO and also understands generic aliases and `type` aliases. A union annotation registers the handler once per member, so `event: UserCreatedEvent | UserDeletedEvent` subscribes to both types.
+
+When several handlers match through the MRO, a command or a query goes to the most specific one: a handler registered for a subclass wins over one registered for its base class. An event goes to all of them.
 
 ## Command handlers
 
@@ -135,9 +139,11 @@ class CreateUserHandler(NamedTuple):
         return user.id
 ```
 
-`events.add(...)` accepts any number of events and schedules each one on a task group that lives for the duration of the command dispatch. Events start right away and run concurrently with the rest of the handler, and the command dispatch only returns once every scheduled event has been fully handled. Where you call `add` therefore says something: as the last line, nothing after it depends on the event; in the middle of the handler, the remaining work runs concurrently with the event handlers.
+`events.add(...)` accepts any number of events and schedules each one on a task group that lives for the duration of the command dispatch. Events start as soon as the handler gives control back to the event loop (at its next `await`, or when it returns) and run concurrently with the rest of the handler. The command dispatch only returns once every scheduled event has been fully handled. Where you call `add` therefore says something: as the last line, nothing after it depends on the event; in the middle of the handler, the remaining work runs concurrently with the event handlers.
 
-If an event handler raises, the exception propagates back to the caller of the command, wrapped in two nested `ExceptionGroup`s: one for the events scheduled by the command, one for the handlers of that event. Catch it with `except*`, which matches through any level of nesting.
+Scheduled events are handled even if the command handler raises afterwards: nothing is rolled back. Call `add` once the work the event reports has actually succeeded. For the same reason, a command retried by `RetryMiddleware` publishes the events of every failed attempt.
+
+If an event handler raises, the command handler is cancelled if it is still running, and the exception propagates back to the caller of the command, wrapped in two nested `ExceptionGroup`s: one for the events scheduled by the command, one for the handlers of that event. Catch it with `except*`, which matches through any level of nesting.
 
 `RelatedEvents` is provided by the command scope of the DI adapter. With the `[injection]` extra it works out of the box; with a custom adapter, see [Custom DI adapter](di.md).
 

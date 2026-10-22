@@ -34,7 +34,7 @@ await queue.send(UserCreatedEvent(user_id=42))
 
 The default, `maxsize=0`, means no buffer at all: `send` waits until a consumer takes the message. It keeps the producer from running ahead of the consumer, but `await queue.send(...)` blocks forever if nothing is draining the queue. Send from inside a draining context (see [Pump](pump.md)), or pass `maxsize=math.inf` for an unbounded buffer.
 
-`close()` stops the queue: consumers finish the messages already buffered, then their iteration ends. `MemoryQueue` is also an async context manager that closes itself on exit.
+`close()` stops the queue for good: consumers finish the messages already buffered, then their iteration ends, and a closed queue cannot be reopened. `MemoryQueue` is also an async context manager that closes itself on exit.
 
 `MemoryQueue` fits when producer and consumer live in the same process. It is not thread-safe: `send` and the consumption must run on the event loop that created the queue. For cross-process or persistent queues, implement `Queue` against your transport.
 
@@ -53,12 +53,12 @@ class BrokerQueue[T](Queue[T]):
         self.client = client
         self.topic = topic
 
-    async def send(self, message: T, /) -> None:
-        await self.client.publish(self.topic, encode(message))
-
     async def __aiter__(self) -> AsyncIterator[Delivery[T]]:
         async for record in self.client.subscribe(self.topic):
             yield self.__deliver(record)
+
+    async def send(self, message: T, /) -> None:
+        await self.client.publish(self.topic, encode(message))
 
     @asynccontextmanager
     async def __deliver(self, record: Record) -> AsyncIterator[T]:
@@ -73,4 +73,4 @@ class BrokerQueue[T](Queue[T]):
 
 `BrokerClient`, `Record`, `encode`, and `decode` stand for whatever your transport library provides. The message itself stays plain data: transport concerns live in the queue, not on the message.
 
-The resilience of the transport (reconnecting, retrying a failed fetch) also belongs to the queue. If the iteration raises, the pump draining it stops.
+The resilience of the transport (reconnecting, retrying a failed fetch) also belongs to the queue. If the iteration raises, the pump draining it stops, even with `fail_silently=True`, which only covers the processing of each message.
