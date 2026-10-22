@@ -10,7 +10,7 @@ An async-first Python library for structuring code around CQRS (Commands, Querie
 
 ## Documentation
 
-The full guide lives at **<https://python-cq.remimd.dev>**. Start there: it covers installation, the message model, dispatching, bus configuration, command pipelines, and how to plug in a custom DI framework.
+The full guide lives at **<https://python-cq.remimd.dev>**. Start there: it covers installation, routing (messages, buses, middlewares, command pipelines, custom DI), and queuing.
 
 ## Installation
 
@@ -20,4 +20,4 @@ Requires Python 3.12 or higher.
 pip install "python-cq[injection]"
 ```
 
-The `[injection]` extra installs [python-injection](https://github.com/100nm/python-injection) as the default DI backend (recommended). To bring your own DI framework, install `python-cq` without the extra and see the [Custom DI adapter](https://python-cq.remimd.dev/di) guide.
+The `[injection]` extra installs [python-injection](https://github.com/100nm/python-injection) as the default DI backend (recommended). To bring your own DI framework, install `python-cq` without the extra and see the [Custom DI adapter](https://python-cq.remimd.dev/routing/di/) guide.

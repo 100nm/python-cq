@@ -17,13 +17,16 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Guides:
-      - Messages and handlers: guides/messages.md
-      - Dispatching messages: guides/dispatching.md
-      - Configuring a bus: guides/configuring.md
-      - Executing multiple commands: guides/multiple_commands.md
-      - Queueing messages: guides/queues.md
-  - Custom DI adapter: di.md
+  - Routing:
+      - Messages and handlers: routing/messages.md
+      - Dispatching messages: routing/dispatching.md
+      - Configuring a bus: routing/configuring.md
+      - Middlewares: routing/middlewares.md
+      - Executing multiple commands: routing/multiple_commands.md
+      - Custom DI adapter: routing/di.md
+  - Queuing:
+      - Queues: queuing/queues.md
+      - Pump: queuing/pump.md
 
 plugins:
   - search

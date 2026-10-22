@@ -3,7 +3,14 @@
 [![PyPI - Version](https://shieldcn.dev/pypi/v/python-cq.svg?variant=secondary)](https://pypi.org/project/python-cq)
 [![PyPI - Downloads](https://shieldcn.dev/pypi/dm/python-cq.svg?variant=secondary)](https://pypistats.org/packages/python-cq)
 
-**python-cq** is an async-first Python library for organizing code around CQRS. It separates reads (queries), writes (commands), and notifications (events) into dedicated message buses, and lets you plug in any dependency injection framework behind a small protocol.
+**python-cq** is an async-first Python library for organizing code around CQRS. It routes commands, queries, and events to their handlers through dedicated buses, and lets you put a queue in front of any of them when a message should be processed later. Dependency injection is pluggable behind a small protocol.
+
+The library is made of two independent parts:
+
+* **Routing**: messages, handlers, buses, middlewares, and command pipelines. This is the core of the library and what most applications need.
+* **Queuing**: a `Queue` protocol and a `Pump` that drains a queue into any async callable, typically a bus.
+
+You can use routing without ever touching queuing, and the queuing primitives work with any dispatcher, not only the buses of this library.
 
 ## What is CQRS?
 
@@ -17,13 +24,13 @@ CQRS is often discussed alongside distributed systems and Event Sourcing, but th
 
 ## Three message types
 
-| Type      | Intent                                | Handlers              | Returns                  |
-|-----------|---------------------------------------|-----------------------|--------------------------|
-| `Command` | Change the state of the system        | Exactly one           | The handler's return value |
-| `Query`   | Read state without side effects       | Exactly one           | The handler's return value |
-| `Event`   | Notify that something has happened    | Zero, one, or many    | Nothing                  |
+| Type      | Intent                             | Handlers           | Returns                    |
+|-----------|------------------------------------|--------------------|----------------------------|
+| `Command` | Change the state of the system     | Exactly one        | The handler's return value |
+| `Query`   | Read state without side effects    | Exactly one        | The handler's return value |
+| `Event`   | Notify that something has happened | Zero, one, or many | Nothing                    |
 
-A `Command` is allowed to return a value (for convenience, typically an id or a result object), but that does not mean it should be used as a query. Keep intent clear.
+A `Command` is allowed to return a value (for convenience, typically an id or a result object), but that does not make it a query. Keep intent clear.
 
 ## Installation
 
@@ -35,7 +42,7 @@ With the default DI backend ([python-injection](https://github.com/100nm/python-
 pip install "python-cq[injection]"
 ```
 
-Without dependency injection (you will need to implement a `DIAdapter`):
+Without dependency injection (you will need to implement a `DIAdapter` to inject anything into your handlers):
 
 ```bash
 pip install python-cq
@@ -73,7 +80,7 @@ async def main(bus: CommandBus[int]) -> None:
 asyncio.run(main())
 ```
 
-The decorator registers the handler against the type of its first `handle` parameter. The bus is resolved by the DI container and dispatched to that handler.
+The decorator registers the handler against the type annotation of the first `handle` parameter. The bus is resolved by the DI container and forwards the command to that handler.
 
 ## Prerequisites
 
