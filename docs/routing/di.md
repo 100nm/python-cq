@@ -100,20 +100,63 @@ router = Router(MyDIAdapter()).register_defaults()
 
 ```python
 from cq import AnyIORelatedEvents, EventBus, MiddlewareResult, RelatedEvents
+from dataclasses import dataclass
 from typing import Any
 
 
-async def command_scope_middleware(command) -> MiddlewareResult[Any]:
-    event_bus = await resolve(EventBus)
+@dataclass
+class CommandScopeMiddleware:
+    event_bus: EventBus
 
-    async with AnyIORelatedEvents(event_bus) as events:
-        with container.override(RelatedEvents, events):
-            yield
+    async def __call__(self, command) -> MiddlewareResult[Any]:
+        async with AnyIORelatedEvents(self.event_bus) as events:
+            with container.override(RelatedEvents, events):
+                yield
 ```
 
-`resolve` and `container.override` stand for whatever your container provides. If your container already exposes the scope as an async context manager, wrap it with `cq.middlewares.contextlib.AsyncContextManagerMiddleware` instead of writing the middleware by hand.
+Your adapter's `command_scope` returns an instance of this class, built with the event bus. `container.override` stands for whatever your container provides. If your container already exposes the scope as an async context manager, wrap it with `cq.middlewares.contextlib.AsyncContextManagerMiddleware` instead of writing the middleware by hand.
 
 You can also write your own `RelatedEvents` (an outbox, an implementation that enriches events with a correlation id, ...). The protocol only requires an `add(*events)` method.
+
+### Passing `RelatedEvents` as an argument
+
+If your container cannot scope a dependency to a dispatch, there is a workaround: the command scope can pass `RelatedEvents` to the handler as an extra argument of `call_next`, which is forwarded down to `handle`. Prefer a scoped dependency whenever your container supports one.
+
+!!! warning
+    This changes the signature of every command handler, not only those that publish events: each `handle` must accept the extra parameter, otherwise its dispatch raises a `TypeError`.
+
+```python
+from cq import AnyIORelatedEvents, EventBus
+from dataclasses import dataclass
+
+
+@dataclass
+class CommandScopeMiddleware:
+    event_bus: EventBus
+
+    async def __call__(self, call_next, command):
+        async with AnyIORelatedEvents(self.event_bus) as events:
+            return await call_next(command, events)
+```
+
+Command handlers then receive the events as the second parameter of `handle`, instead of as a constructor dependency:
+
+```python
+from cq import RelatedEvents, command_handler
+from typing import NamedTuple
+
+
+@command_handler
+class CreateUserHandler(NamedTuple):
+    repository: UserRepository
+
+    async def handle(self, command: CreateUserCommand, events: RelatedEvents) -> int:
+        user = await self.repository.create(command.name, command.email)
+        events.add(UserCreatedEvent(user_id=user.id))
+        return user.id
+```
+
+The middlewares you add to the bus are not affected: they sit outside the command scope (see [Execution order](middlewares.md#execution-order)) and only receive the command.
 
 ## Without an adapter
 
