@@ -30,6 +30,18 @@ async with Pump(queue, event_bus).draining(graceful=True):
     await queue.close()
 ```
 
+## Draining without a context
+
+`draining` suits a pump that runs alongside other code. When consuming the queue is all a process does, as in a dedicated worker, await `drain` directly:
+
+```python
+await Pump(queue, event_bus).drain()
+```
+
+`drain` returns once the consumer's iteration ends, that is when the queue is closed, and runs forever otherwise. `fail_silently` and the pump's middlewares apply as with `draining`. Since there is no task group, an exception comes out of `drain` as is, not inside an `ExceptionGroup`.
+
+`drain` runs a single drain loop. For concurrency, start several of them in your own task group, against a consumer that supports concurrent iteration (see [Concurrency](#concurrency)).
+
 ## `MemoryQueue.draining`
 
 For a `MemoryQueue`, `draining` combines both steps: it opens a graceful pump, yields the queue, and closes it on exit, so the queue cannot be reused afterwards. When the block ends, every message sent inside it has been processed:

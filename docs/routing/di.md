@@ -1,7 +1,7 @@
 # Custom DI adapter
 
 !!! note
-    If you installed `python-cq[injection]`, you can skip this page. The integration with [python-injection](https://github.com/100nm/python-injection) is already wired up. This page is only useful to plug in a different DI framework.
+    If you installed `python-cq[injection]`, you can skip this page. The integration with [python-injection](https://github.com/100nm/python-injection) is already wired up (see [python-injection](../integrations/injection.md)). This page is only useful to plug in a different DI framework.
 
 **python-cq** does not depend on a specific dependency injection container. It talks to DI through the `DIAdapter` protocol: implement it once and the library works with the container you already use.
 
@@ -26,6 +26,8 @@ new_query_bus = router.new_query_bus
 ```
 
 `register_defaults()` hands the bus factories to the adapter so that `CommandBus`, `EventBus`, and `QueryBus` can be resolved from the container. Call it once per router.
+
+A router also lists the message types its handlers are registered for, through `command_types`, `event_types`, and `query_types`.
 
 Pipelines follow the same rule. Build them from your router so they resolve the buses through your adapter:
 
@@ -63,8 +65,9 @@ class MyDIAdapter(DIAdapter):
     def lazy[T](self, tp: type[T]) -> Callable[[], Awaitable[T]]:
         """
         Return a callable that, when called and awaited, resolves `tp` from
-        the container. Pipelines use it to resolve the buses on first use,
-        so that buses registered later in the import graph are picked up.
+        the container. Pipelines call the returned callable on every
+        message they dispatch, so that buses registered later in the import
+        graph are picked up.
         """
         ...
 
