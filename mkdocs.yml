@@ -27,6 +27,8 @@ nav:
   - Queuing:
       - Queues: queuing/queues.md
       - Pump: queuing/pump.md
+  - Integrations:
+      - python-injection: integrations/injection.md
 
 plugins:
   - search

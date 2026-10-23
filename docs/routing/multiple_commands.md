@@ -71,7 +71,7 @@ class PaymentContext:
 
 Annotate the pipeline with `ClassVar`: if the context is a dataclass, a plain annotation would turn the pipeline into a field.
 
-The pipeline resolves `CommandBus` and `QueryBus` from the DI container the first time it dispatches, so the buses you configure in your container are the ones it uses. If you manage your own `Router` (see [Custom DI adapter](di.md)), build the pipeline with `router.command_pipeline()` instead.
+The pipeline resolves `CommandBus` and `QueryBus` from the DI container each time it dispatches a message, not when it is created, so the buses you configure in your container are the ones it uses. With a bus factory registered as `@injectable`, each message is therefore dispatched by a new bus. If you manage your own `Router` (see [Custom DI adapter](di.md)), build the pipeline with `router.command_pipeline()` instead.
 
 ### Steps
 
