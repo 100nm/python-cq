@@ -71,11 +71,13 @@ def resolve_handler_source[**P, T](
     | HandleFunction[P, T],
     /,
 ) -> HandlerType[P, T] | Any:
-    while True:
-        try:
-            call_next = call_next.call_next  # type: ignore[union-attr]
-        except AttributeError:
-            return call_next.source  # type: ignore[union-attr]
+    while isinstance(call_next, _BoundMiddleware):
+        call_next = call_next.call_next
+
+    if isinstance(call_next, HandleFunction):
+        return call_next.source
+
+    return call_next
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)

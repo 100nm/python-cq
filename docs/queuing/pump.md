@@ -107,7 +107,7 @@ async def timing_middleware(call_next, message):
 pump = Pump(queue, event_bus).add_middlewares(sentry_middleware, timing_middleware)
 ```
 
-These are the same middlewares as on a bus, so everything described in the [routing middlewares guide](../routing/middlewares.md) applies, including the built-in ones and the execution order. The exception is `resolve_handler_source`, which needs a handler behind `call_next` and therefore only works on a bus.
+These are the same middlewares as on a bus, so everything described in the [routing middlewares guide](../routing/middlewares.md) applies, including the built-in ones and the execution order. The exception is `resolve_handler_source`: there is no handler behind `call_next` on a pump, so it returns the pump's dispatcher instead of a handler class.
 
 When the dispatcher is a bus, both stacks apply. Put each concern where it belongs:
 

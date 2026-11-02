@@ -84,7 +84,7 @@ async def logging_middleware(call_next, message):
 
 The class also gives access to metadata declared on the handler, such as a class attribute or a marker set by your own decorator.
 
-It only works on a bus. On a `Pump` or a pipeline, there is no handler behind `call_next`, and it raises an `AttributeError`.
+Outside a bus, there is no handler behind `call_next`, so it returns the callable the middlewares wrap instead. On a `Pump`, that is the dispatcher given to the pump (for instance the bus). On a pipeline, it is an internal callable, so don't rely on it there.
 
 ## Class-based middlewares
 
