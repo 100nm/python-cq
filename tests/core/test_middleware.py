@@ -261,3 +261,26 @@ async def test_resolve_handler_source_with_success_returns_handler_type() -> Non
     await bus.dispatch("hello")
 
     assert sources == [Handler]
+
+
+async def test_resolve_handler_source_without_handler_returns_wrapped_callable() -> (
+    None
+):
+    sources = []
+
+    async def resolving_middleware(
+        call_next: Callable[[str], Awaitable[None]],
+        message: str,
+    ) -> None:
+        sources.append(resolve_handler_source(call_next))
+        await call_next(message)
+
+    async def other_middleware(message: str) -> MiddlewareResult[None]:
+        yield
+
+    async def dispatcher(message: str) -> None: ...
+
+    group = MiddlewareGroup[[str], None]().add(resolving_middleware, other_middleware)
+    await group.invoke(dispatcher, "hello")
+
+    assert sources == [dispatcher]
