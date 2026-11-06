@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      <url>
+        <loc>https://python-cq.remimd.dev/</loc>
+      </url>
+      <url>
+        <loc>https://python-cq.remimd.dev/integrations/injection/</loc>
+      </url>
+      <url>
+        <loc>https://python-cq.remimd.dev/queuing/pump/</loc>
+      </url>
+      <url>
+        <loc>https://python-cq.remimd.dev/queuing/queues/</loc>
+      </url>
+      <url>
+        <loc>https://python-cq.remimd.dev/routing/configuring/</loc>
+      </url>
+      <url>
+        <loc>https://python-cq.remimd.dev/routing/di/</loc>
+      </url>
+      <url>
+        <loc>https://python-cq.remimd.dev/routing/dispatching/</loc>
+      </url>
+      <url>
+        <loc>https://python-cq.remimd.dev/routing/messages/</loc>
+      </url>
+      <url>
+        <loc>https://python-cq.remimd.dev/routing/middlewares/</loc>
+      </url>
+      <url>
+        <loc>https://python-cq.remimd.dev/routing/multiple_commands/</loc>
+      </url>
+</urlset>
