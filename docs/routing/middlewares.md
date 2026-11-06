@@ -9,7 +9,7 @@ bus.add_middlewares(timing_middleware, transaction_middleware)
 
 For commands and queries, the middleware stack wraps the single handler once. For events, the stack is applied around each handler independently, so a middleware sees one invocation per event handler.
 
-The same middlewares can be attached to a [command pipeline](multiple_commands.md#middlewares) and to a [`Pump`](../queuing/pump.md#middlewares).
+The same middlewares can be attached to a [command pipeline](multiple_commands.md#middlewares), to a [`Pump`](../queuing/pump.md#middlewares) and to [your own async functions](#using-middlewares-on-your-own-functions).
 
 ## Generator middlewares
 
@@ -130,6 +130,23 @@ bus.add_middlewares(c)  # c -> a -> b -> handler
 ```
 
 The rule also covers the command scope that `new_command_bus()` installs before you add anything. Your own middlewares sit outside of it: they wrap the dispatch of every related event, but they cannot inject a dependency that only exists inside the scope, such as `RelatedEvents`.
+
+## Using middlewares on your own functions
+
+If you like python-cq's middlewares, you can use them on your own async functions too, without going through a bus. `through_middlewares` wraps a function with the middlewares you give it:
+
+```python
+from cq import through_middlewares
+from cq.middlewares.retry import RetryMiddleware
+
+
+@through_middlewares(timing_middleware, RetryMiddleware(retry=3))
+async def fetch_invoice(invoice_id: int) -> Invoice: ...
+```
+
+Each middleware receives the arguments of the function instead of a message, so here `timing_middleware` is called with `invoice_id`.
+
+`through_middlewares` takes at least one middleware, and they nest in the order you list them, like with `add_middlewares`.
 
 ## Built-in middlewares
 

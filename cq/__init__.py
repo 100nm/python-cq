@@ -7,7 +7,12 @@ from ._core.message import (
     Query,
     QueryBus,
 )
-from ._core.middleware import Middleware, MiddlewareResult, resolve_handler_source
+from ._core.middleware import (
+    Middleware,
+    MiddlewareResult,
+    resolve_handler_source,
+    through_middlewares,
+)
 from ._core.queuing.pump import Pump
 from ._core.queuing.queues.abc import Consumer, Delivery, Producer, Queue
 from ._core.queuing.queues.memory import MemoryQueue
@@ -54,6 +59,7 @@ __all__ = (
     "new_query_bus",
     "query_handler",
     "resolve_handler_source",
+    "through_middlewares",
 )
 
 

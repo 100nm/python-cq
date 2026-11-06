@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from dataclasses import dataclass, field
+from functools import wraps
 from inspect import isasyncgenfunction
 from typing import Any, Concatenate, Self, TypeGuard
 
@@ -22,6 +23,13 @@ class MiddlewareGroup[**P, T]:
         default_factory=list,
         init=False,
     )
+
+    def __call__(self, wrapped: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+        @wraps(wrapped)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            return await self.invoke(wrapped, *args, **kwargs)
+
+        return wrapper
 
     def add(self, *middlewares: Middleware[P, T]) -> Self:
         classic_middlewares = reversed(
@@ -48,12 +56,24 @@ class MiddlewareGroup[**P, T]:
 
         return handler
 
+    @classmethod
+    def from_middlewares(cls, *middlewares: Middleware[P, T]) -> Self:
+        return cls().add(*middlewares)
+
     @staticmethod
     def __normalize(middleware: Middleware[P, T]) -> ClassicMiddleware[P, T]:
         if _is_gen_middleware(middleware):
             return _GeneratorMiddleware(middleware)
 
         return middleware  # type: ignore[return-value]
+
+
+def through_middlewares[**P, T](
+    first_middleware: Middleware[P, T],
+    /,
+    *middlewares: Middleware[P, T],
+) -> MiddlewareGroup[P, T]:
+    return MiddlewareGroup.from_middlewares(first_middleware, *middlewares)
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)

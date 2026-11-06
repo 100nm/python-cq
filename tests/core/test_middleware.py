@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from cq import MiddlewareResult, resolve_handler_source
+from cq import MiddlewareResult, resolve_handler_source, through_middlewares
 from cq._core.middleware import MiddlewareGroup
 from cq._core.routing.dispatchers.bus import SimpleBus
 from cq._core.routing.handler import HandlerDecorator, SingleHandlerRegistry
@@ -235,6 +235,65 @@ class TestMiddlewareGroup:
 
         with pytest.raises(MiddlewareError, match="Too many `yield` keywords"):
             await group.invoke(handler)
+
+    async def test_from_middlewares_with_several_middlewares_returns_group_running_first_outermost(
+        self,
+    ) -> None:
+        calls = []
+
+        async def outer() -> MiddlewareResult[None]:
+            calls.append("enter outer")
+            yield
+            calls.append("exit outer")
+
+        async def inner() -> MiddlewareResult[None]:
+            calls.append("enter inner")
+            yield
+            calls.append("exit inner")
+
+        async def handler() -> None:
+            calls.append("handler")
+
+        group = MiddlewareGroup[[], None].from_middlewares(outer, inner)
+        await group.invoke(handler)
+
+        assert calls == [
+            "enter outer",
+            "enter inner",
+            "handler",
+            "exit inner",
+            "exit outer",
+        ]
+
+
+async def test_through_middlewares_with_several_middlewares_returns_decorator_running_first_outermost() -> (
+    None
+):
+    calls = []
+
+    async def outer() -> MiddlewareResult[None]:
+        calls.append("enter outer")
+        yield
+        calls.append("exit outer")
+
+    async def inner() -> MiddlewareResult[None]:
+        calls.append("enter inner")
+        yield
+        calls.append("exit inner")
+
+    @through_middlewares(outer, inner)
+    async def handler() -> None:
+        calls.append("handler")
+
+    await handler()
+
+    assert calls == [
+        "enter outer",
+        "enter inner",
+        "handler",
+        "exit inner",
+        "exit outer",
+    ]
 
 
 async def test_resolve_handler_source_with_success_returns_handler_type() -> None:
