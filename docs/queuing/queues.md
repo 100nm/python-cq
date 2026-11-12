@@ -26,9 +26,9 @@ Any object that satisfies these protocols can be used as a queue.
 `MemoryQueue` is a thin wrapper around `anyio.create_memory_object_stream`. `maxsize` is how many messages the queue buffers before `send` waits for a free slot:
 
 ```python
-from cq import MemoryQueue
+from cq import Event, MemoryQueue
 
-queue: MemoryQueue[UserCreatedEvent] = MemoryQueue(maxsize=100)
+queue: MemoryQueue[Event] = MemoryQueue(maxsize=100)
 await queue.send(UserCreatedEvent(user_id=42))
 ```
 
