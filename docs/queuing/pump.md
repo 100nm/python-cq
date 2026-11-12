@@ -3,10 +3,10 @@
 `Pump` connects a `Consumer` to a dispatcher. The dispatcher is any async callable that accepts one message: a bus, a function, or another queue's producer.
 
 ```python
-from cq import EventBus, MemoryQueue, Pump
+from cq import Event, EventBus, MemoryQueue, Pump
 
 event_bus: EventBus = ...
-queue: MemoryQueue[UserCreatedEvent] = MemoryQueue()
+queue: MemoryQueue[Event] = MemoryQueue()
 
 async with Pump(queue, event_bus).draining():
     # ...
