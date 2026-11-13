@@ -20,10 +20,10 @@ There is no base class to inherit from. `Command`, `Query`, and `Event` exported
 
 ## Handlers
 
-A handler is a class with an async `handle` method that takes the message as its first parameter. It is registered with one of the three decorators: `@command_handler`, `@query_handler`, or `@event_handler`.
+A handler is a class with an async `handle` method that takes the message as its first parameter. It is registered with one of the three decorators: `@command_handler`, `@query_handler`, or `@event_handler`, exported by `cq.default`.
 
 ```python
-from cq import command_handler
+from cq.default import command_handler
 
 
 @command_handler
@@ -42,7 +42,7 @@ A command or a query accepts a single handler: registering a second one for the 
 Defining a handler as a `NamedTuple` (or a frozen `dataclass`) gives a concise, immutable declaration of its dependencies:
 
 ```python
-from cq import command_handler
+from cq.default import command_handler
 from typing import NamedTuple
 
 
@@ -72,7 +72,7 @@ class CreateUserHandler:
 A handler registered for a base class also receives every subclass of that type. This lets you write a single handler for a family of related messages:
 
 ```python
-from cq import event_handler
+from cq.default import event_handler
 from dataclasses import dataclass
 
 
@@ -100,7 +100,7 @@ When several handlers match through the MRO, a command or a query goes to the mo
 Command handlers change the state of the system and may return a value, typically an identifier or a small result object.
 
 ```python
-from cq import command_handler
+from cq.default import command_handler
 from dataclasses import dataclass
 from typing import NamedTuple
 
@@ -125,7 +125,8 @@ class CreateUserHandler(NamedTuple):
 A command handler can inject `RelatedEvents` to publish events as part of the command's execution:
 
 ```python
-from cq import RelatedEvents, command_handler
+from cq import RelatedEvents
+from cq.default import command_handler
 
 
 @command_handler
@@ -152,7 +153,7 @@ If an event handler raises, the command handler is cancelled if it is still runn
 Query handlers read state and must not produce side effects.
 
 ```python
-from cq import query_handler
+from cq.default import query_handler
 from dataclasses import dataclass
 from typing import NamedTuple
 
@@ -175,7 +176,7 @@ class GetUserByIdHandler(NamedTuple):
 Event handlers react to something that has already happened. An event can have zero, one, or many handlers, which makes events the right tool for loose coupling between components.
 
 ```python
-from cq import event_handler
+from cq.default import event_handler
 from dataclasses import dataclass
 from typing import NamedTuple
 

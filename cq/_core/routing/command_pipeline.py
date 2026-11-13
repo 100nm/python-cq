@@ -21,7 +21,14 @@ class ContextCommandPipeline[C: Command](ContextPipeline[C]):
     __default_di: ClassVar[DIAdapter]
 
     def __init__(self, di: DIAdapter | None = None, /) -> None:
-        di = di or self.__default_di
+        try:
+            di = di or self.__default_di
+        except AttributeError as exc:  # pragma: no cover
+            raise RuntimeError(
+                "No DI adapter: import `cq.default` to use the default router, "
+                "or build the pipeline with `router.command_pipeline()`."
+            ) from exc
+
         super().__init__(LazyDispatcher(CommandBus, di))
         self.__query_dispatcher = LazyDispatcher(QueryBus, di)
 

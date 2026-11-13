@@ -1,3 +1,6 @@
+import subprocess
+import sys
+
 from cq import ContextCommandPipeline, Router
 
 
@@ -85,3 +88,19 @@ class TestContextCommandPipeline:
         await Context.pipeline.dispatch(_CreateCommand())
 
         assert queries == [query]
+
+    def test_init_without_adapter_nor_default_router_raises_runtime_error(
+        self,
+    ) -> None:
+        script = "from cq import ContextCommandPipeline; ContextCommandPipeline()"
+
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+
+        assert result.returncode != 0
+        assert "RuntimeError" in result.stderr
+        assert "cq.default" in result.stderr

@@ -52,7 +52,8 @@ pip install python-cq
 
 ```python
 import asyncio
-from cq import CommandBus, command_handler
+from cq import CommandBus
+from cq.default import command_handler
 from dataclasses import dataclass
 from injection import inject
 

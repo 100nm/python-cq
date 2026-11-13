@@ -7,9 +7,9 @@
 
 ## The `Router` class
 
-`Router` ties the handler registries to a DI adapter. The decorators (`command_handler`, `event_handler`, `query_handler`) and bus factories (`new_command_bus`, `new_event_bus`, `new_query_bus`) exported by `cq` are bound to a default `Router` built at import time, which uses python-injection when the extra is installed.
+`Router` ties the handler registries to a DI adapter. The decorators (`command_handler`, `event_handler`, `query_handler`) and bus factories (`new_command_bus`, `new_event_bus`, `new_query_bus`) exported by `cq.default` are bound to a default `Router`, which uses python-injection when the extra is installed. This router is only built, and its buses only registered in the container, when `cq.default` is imported: importing `cq` alone registers nothing.
 
-To use your own adapter, create a `Router` with it and use its methods in place of the module-level ones:
+To use your own adapter, create a `Router` with it and use its methods in place of the ones from `cq.default`, which you then never import:
 
 ```python
 from cq import Router
@@ -145,7 +145,8 @@ class CommandScopeMiddleware:
 Command handlers then receive the events as the second parameter of `handle`, instead of as a constructor dependency:
 
 ```python
-from cq import RelatedEvents, command_handler
+from cq import RelatedEvents
+from cq.default import command_handler
 from typing import NamedTuple
 
 

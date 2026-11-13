@@ -50,37 +50,7 @@ __all__ = (
     "Queue",
     "RelatedEvents",
     "Router",
-    "__router__",
-    "command_handler",
     "dispatch_sequentially",
-    "event_handler",
-    "new_command_bus",
-    "new_event_bus",
-    "new_query_bus",
-    "query_handler",
     "resolve_handler_source",
     "through_middlewares",
 )
-
-
-try:
-    from .ext.injection import InjectionAdapter
-
-except ImportError:  # pragma: no cover
-    __router__ = Router()
-
-else:
-    __router__ = Router(InjectionAdapter())
-    del InjectionAdapter
-
-__router__.register_defaults()
-
-command_handler = __router__.command_handler
-event_handler = __router__.event_handler
-query_handler = __router__.query_handler
-
-new_command_bus = __router__.new_command_bus
-new_event_bus = __router__.new_event_bus
-new_query_bus = __router__.new_query_bus
-
-ContextCommandPipeline._set_default_di(__router__.di)
