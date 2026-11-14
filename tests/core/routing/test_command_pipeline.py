@@ -1,3 +1,5 @@
+import pytest
+
 from cq import ContextCommandPipeline, Router
 
 
@@ -80,3 +82,15 @@ class TestContextCommandPipeline:
         await Context.pipeline.dispatch(_CreateCommand())
 
         assert queries == [query]
+
+    def test_init_without_adapter_nor_default_router_raises_runtime_error(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.delattr(
+            ContextCommandPipeline,
+            "_ContextCommandPipeline__default_di",
+        )
+
+        with pytest.raises(RuntimeError, match=r"cq\.default"):
+            ContextCommandPipeline()

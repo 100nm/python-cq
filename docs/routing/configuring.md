@@ -6,7 +6,8 @@
 The buses resolved by default have no listeners and no middlewares of your own. To customize one, write a factory that builds the bus with `new_command_bus()`, `new_query_bus()`, or `new_event_bus()`, configures it, and registers it in the DI container:
 
 ```python
-from cq import CommandBus, new_command_bus
+from cq import CommandBus
+from cq.default import new_command_bus
 from injection import injectable
 
 
