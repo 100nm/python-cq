@@ -1,5 +1,5 @@
 from contextlib import nullcontext
-from typing import Any, Self
+from typing import Any
 
 import pytest
 
@@ -8,22 +8,12 @@ from cq._core.routing.dispatchers.bus import SimpleBus, TaskBus
 from cq.middlewares.contextlib import ContextManagerMiddleware
 
 
-class _UpperHandler:
-    async def handle(self, message: str) -> str:
-        return message.upper()
-
-    @classmethod
-    async def factory(cls) -> Self:
-        return cls()
+async def _upper(message: str) -> str:
+    return message.upper()
 
 
-class _FailingHandler:
-    async def handle(self, message: str) -> None:
-        raise ValueError(message)
-
-    @classmethod
-    async def factory(cls) -> Self:
-        return cls()
+async def _fail(message: str) -> None:
+    raise ValueError(message)
 
 
 class TestSimpleBus:
@@ -43,15 +33,15 @@ class TestSimpleBus:
     def test_subscribe_with_success_returns_self(self) -> None:
         bus = SimpleBus[str, str]()
 
-        assert bus.subscribe(str, _UpperHandler.factory) is bus
+        assert bus.subscribe(str, _upper) is bus
 
     async def test_call_with_success_returns_handler_result(self) -> None:
-        bus = SimpleBus[str, str]().subscribe(str, _UpperHandler.factory)
+        bus = SimpleBus[str, str]().subscribe(str, _upper)
 
         assert await bus("hello") == "HELLO"
 
     async def test_dispatch_with_handler_returns_handler_result(self) -> None:
-        bus = SimpleBus[str, str]().subscribe(str, _UpperHandler.factory)
+        bus = SimpleBus[str, str]().subscribe(str, _upper)
 
         assert await bus.dispatch("hello") == "HELLO"
 
@@ -61,7 +51,7 @@ class TestSimpleBus:
         assert await bus.dispatch("hello") is NotImplemented
 
     async def test_dispatch_with_failing_handler_raises_error(self) -> None:
-        bus = SimpleBus[str, None]().subscribe(str, _FailingHandler.factory)
+        bus = SimpleBus[str, None]().subscribe(str, _fail)
 
         with pytest.raises(ValueError, match="hello"):
             await bus.dispatch("hello")
@@ -71,7 +61,7 @@ class TestSimpleBus:
     ) -> None:
         bus = SimpleBus[str, Any]().subscribe(
             str,
-            _FailingHandler.factory,
+            _fail,
             fail_silently=True,
         )
 
@@ -95,11 +85,7 @@ class TestSimpleBus:
             result = yield
             results.append(result)
 
-        bus = (
-            SimpleBus[str, str]()
-            .subscribe(str, _UpperHandler.factory)
-            .add_middlewares(middleware)
-        )
+        bus = SimpleBus[str, str]().subscribe(str, _upper).add_middlewares(middleware)
         await bus.dispatch("hello")
 
         assert results == ["HELLO"]
@@ -109,27 +95,13 @@ class TestTaskBus:
     async def test_dispatch_with_several_handlers_calls_all_handlers(self) -> None:
         handled = []
 
-        class FirstHandler:
-            async def handle(self, message: str) -> None:
-                handled.append(f"first {message}")
+        async def first(message: str) -> None:
+            handled.append(f"first {message}")
 
-            @classmethod
-            async def factory(cls) -> Self:
-                return cls()
+        async def second(message: str) -> None:
+            handled.append(f"second {message}")
 
-        class SecondHandler:
-            async def handle(self, message: str) -> None:
-                handled.append(f"second {message}")
-
-            @classmethod
-            async def factory(cls) -> Self:
-                return cls()
-
-        bus = (
-            TaskBus[str]()
-            .subscribe(str, FirstHandler.factory)
-            .subscribe(str, SecondHandler.factory)
-        )
+        bus = TaskBus[str]().subscribe(str, first).subscribe(str, second)
         await bus.dispatch("hello")
 
         assert sorted(handled) == ["first hello", "second hello"]
@@ -140,7 +112,7 @@ class TestTaskBus:
     async def test_dispatch_with_failing_handler_raises_exception_group(
         self,
     ) -> None:
-        bus = TaskBus[str]().subscribe(str, _FailingHandler.factory)
+        bus = TaskBus[str]().subscribe(str, _fail)
 
         with pytest.raises(ExceptionGroup) as exc_info:
             await bus.dispatch("hello")
@@ -150,7 +122,7 @@ class TestTaskBus:
     async def test_dispatch_with_failing_handler_and_fail_silently(self) -> None:
         bus = TaskBus[str]().subscribe(
             str,
-            _FailingHandler.factory,
+            _fail,
             fail_silently=True,
         )
 

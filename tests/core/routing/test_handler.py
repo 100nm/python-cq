@@ -3,8 +3,8 @@ from typing import Any, Self
 import pytest
 
 from cq._core.routing.handler import (
-    HandleFunction,
     HandlerDecorator,
+    HandlerEntry,
     MultipleHandlerRegistry,
     SingleHandlerRegistry,
 )
@@ -21,14 +21,11 @@ class _OtherMessage: ...
 
 class _Handler:
     async def handle(self, message: _Message) -> str:
-        return f"handled by {type(self).__name__}"
+        return "handled by _Handler"
 
     @classmethod
     async def factory(cls) -> Self:
         return cls()
-
-
-class _OtherHandler(_Handler): ...
 
 
 class _UnannotatedHandler:
@@ -39,61 +36,103 @@ class _ParameterlessHandler:
     async def handle(self) -> None: ...
 
 
-class TestHandleFunction:
-    async def test_call_with_success_returns_handler_result(self) -> None:
-        function = HandleFunction.create(_Handler.factory)
+class _NotHandler: ...
 
-        assert await function(_Message()) == "handled by _Handler"
 
-    def test_create_with_source_returns_function_with_source(self) -> None:
-        function = HandleFunction.create(_Handler.factory, _Handler)
+async def _handle(message: _Message) -> str:
+    return "handled by _handle"
 
-        assert function.source is _Handler
 
-    def test_create_without_source_returns_function_with_unwrapped_factory(
+async def _other_handle(message: _Message) -> str:
+    return "handled by _other_handle"
+
+
+async def _unannotated_handle(message): ...  # type: ignore[no-untyped-def]
+
+
+async def _parameterless_handle() -> None: ...
+
+
+class TestHandlerEntry:
+    async def test_call_with_factory_returns_handler_result(self) -> None:
+        entry = HandlerEntry.from_factory(_Handler.factory)
+
+        assert await entry(_Message()) == "handled by _Handler"
+
+    async def test_call_with_function_returns_function_result(self) -> None:
+        entry = HandlerEntry.from_function(_handle)
+
+        assert await entry(_Message()) == "handled by _handle"
+
+    def test_from_factory_with_source_returns_entry_with_source(self) -> None:
+        entry = HandlerEntry.from_factory(_Handler.factory, _Handler)
+
+        assert entry.source is _Handler
+
+    def test_from_factory_without_source_returns_entry_with_unwrapped_factory(
         self,
     ) -> None:
-        function = HandleFunction.create(_Handler.factory)
+        entry = HandlerEntry.from_factory(_Handler.factory)
 
-        assert function.source == _Handler.factory
+        assert entry.source == _Handler.factory
+
+    def test_from_function_with_success_returns_entry_with_function_as_source(
+        self,
+    ) -> None:
+        entry = HandlerEntry.from_function(_handle)
+
+        assert entry.source is _handle
+
+    @pytest.mark.parametrize("fail_silently", [True, False])
+    def test_from_function_with_fail_silently_returns_entry_with_fail_silently(
+        self,
+        fail_silently: bool,
+    ) -> None:
+        entry = HandlerEntry.from_function(_handle, fail_silently)
+
+        assert entry.fail_silently is fail_silently
 
 
 class TestMultipleHandlerRegistry:
     def test_subscribe_with_success_returns_self(self) -> None:
         registry = MultipleHandlerRegistry[Any, str]()
+        entry = HandlerEntry.from_function(_handle)
 
-        assert registry.subscribe(_Message, _Handler.factory) is registry
+        assert registry.subscribe(_Message, entry) is registry
 
     async def test_handlers_from_with_several_handlers_returns_all_handlers(
         self,
     ) -> None:
         registry = MultipleHandlerRegistry[Any, str]()
-        registry.subscribe(_Message, _Handler.factory)
-        registry.subscribe(_Message, _OtherHandler.factory)
+        registry.subscribe(_Message, HandlerEntry.from_function(_handle))
+        registry.subscribe(_Message, HandlerEntry.from_function(_other_handle))
 
         results = [
-            await function(_Message()) for function in registry.handlers_from(_Message)
+            await entry(_Message()) for entry in registry.handlers_from(_Message)
         ]
 
-        assert results == ["handled by _Handler", "handled by _OtherHandler"]
+        assert results == ["handled by _handle", "handled by _other_handle"]
 
     def test_handlers_from_with_subclass_returns_parent_handlers(self) -> None:
         registry = MultipleHandlerRegistry[Any, str]()
-        registry.subscribe(_Message, _Handler.factory, _Handler)
+        registry.subscribe(_Message, HandlerEntry.from_function(_handle))
 
-        functions = registry.handlers_from(_ChildMessage)
+        entries = registry.handlers_from(_ChildMessage)
 
-        assert [function.source for function in functions] == [_Handler]
+        assert [entry.source for entry in entries] == [_handle]
 
     def test_handlers_from_with_unknown_message_type_returns_nothing(self) -> None:
         registry = MultipleHandlerRegistry[Any, str]()
-        registry.subscribe(_Message, _Handler.factory)
+        registry.subscribe(_Message, HandlerEntry.from_function(_handle))
 
         assert list(registry.handlers_from(_OtherMessage)) == []
 
     def test_message_types_with_success_returns_subscribed_types(self) -> None:
         registry = MultipleHandlerRegistry[Any, str]()
-        registry.subscribe(_Message | _OtherMessage, _Handler.factory)  # type: ignore[arg-type]
+        registry.subscribe(
+            _Message | _OtherMessage,  # type: ignore[arg-type]
+            HandlerEntry.from_function(_handle),
+        )
 
         assert set(registry.message_types) == {_Message, _OtherMessage}
 
@@ -101,102 +140,153 @@ class TestMultipleHandlerRegistry:
 class TestSingleHandlerRegistry:
     def test_subscribe_with_success_returns_self(self) -> None:
         registry = SingleHandlerRegistry[Any, str]()
+        entry = HandlerEntry.from_function(_handle)
 
-        assert registry.subscribe(_Message, _Handler.factory) is registry
+        assert registry.subscribe(_Message, entry) is registry
 
     def test_subscribe_with_subscribed_message_type_raises_runtime_error(
         self,
     ) -> None:
         registry = SingleHandlerRegistry[Any, str]()
-        registry.subscribe(_Message, _Handler.factory)
+        registry.subscribe(_Message, HandlerEntry.from_function(_handle))
+        entry = HandlerEntry.from_function(_other_handle)
 
         with pytest.raises(RuntimeError, match="A handler is already registered"):
-            registry.subscribe(_Message, _OtherHandler.factory)
+            registry.subscribe(_Message, entry)
 
     def test_subscribe_with_union_containing_subscribed_type_raises_runtime_error(
         self,
     ) -> None:
         registry = SingleHandlerRegistry[Any, str]()
-        registry.subscribe(_Message, _Handler.factory)
+        registry.subscribe(_Message, HandlerEntry.from_function(_handle))
+        entry = HandlerEntry.from_function(_other_handle)
 
         with pytest.raises(RuntimeError):
-            registry.subscribe(_OtherMessage | _Message, _OtherHandler.factory)  # type: ignore[arg-type]
+            registry.subscribe(_OtherMessage | _Message, entry)  # type: ignore[arg-type]
 
         assert set(registry.message_types) == {_Message}
 
     def test_handlers_from_with_subclass_returns_parent_handler(self) -> None:
         registry = SingleHandlerRegistry[Any, str]()
-        registry.subscribe(_Message, _Handler.factory, _Handler)
+        registry.subscribe(_Message, HandlerEntry.from_function(_handle))
 
-        functions = registry.handlers_from(_ChildMessage)
+        entries = registry.handlers_from(_ChildMessage)
 
-        assert [function.source for function in functions] == [_Handler]
+        assert [entry.source for entry in entries] == [_handle]
 
     def test_handlers_from_with_unknown_message_type_returns_nothing(self) -> None:
         registry = SingleHandlerRegistry[Any, str]()
-        registry.subscribe(_Message, _Handler.factory)
+        registry.subscribe(_Message, HandlerEntry.from_function(_handle))
 
         assert list(registry.handlers_from(_OtherMessage)) == []
 
     def test_message_types_with_success_returns_subscribed_types(self) -> None:
         registry = SingleHandlerRegistry[Any, str]()
-        registry.subscribe(_Message | _OtherMessage, _Handler.factory)  # type: ignore[arg-type]
+        registry.subscribe(
+            _Message | _OtherMessage,  # type: ignore[arg-type]
+            HandlerEntry.from_function(_handle),
+        )
 
         assert set(registry.message_types) == {_Message, _OtherMessage}
 
 
 class TestHandlerDecorator:
-    def test_call_with_handler_type_subscribes_it_to_annotated_message_type(
+    @pytest.mark.parametrize("handler", [_Handler, _handle])
+    def test_call_with_handler_subscribes_it_to_annotated_message_type(
         self,
+        handler: Any,
     ) -> None:
         registry = SingleHandlerRegistry[Any, str]()
 
-        handler_type = HandlerDecorator(registry)(_Handler)
+        decorated = HandlerDecorator(registry)(handler)
 
-        assert handler_type is _Handler
-        assert [f.source for f in registry.handlers_from(_Message)] == [_Handler]
+        assert decorated is handler
+        assert [entry.source for entry in registry.handlers_from(_Message)] == [handler]
 
+    @pytest.mark.parametrize("handler", [_Handler, _handle])
     def test_call_with_message_type_subscribes_handler_to_message_type(
         self,
+        handler: Any,
     ) -> None:
         registry = SingleHandlerRegistry[Any, str]()
 
-        handler_type = HandlerDecorator(registry)(_OtherMessage)(_Handler)
+        decorated = HandlerDecorator(registry)(_OtherMessage)(handler)
 
-        assert handler_type is _Handler
+        assert decorated is handler
         assert set(registry.message_types) == {_OtherMessage}
 
+    @pytest.mark.parametrize("handler", [_Handler, _handle])
     def test_call_without_argument_subscribes_handler_to_annotated_message_type(
         self,
+        handler: Any,
     ) -> None:
         registry = SingleHandlerRegistry[Any, str]()
 
-        handler_type = HandlerDecorator(registry)()(_Handler)
+        decorated = HandlerDecorator(registry)()(handler)
 
-        assert handler_type is _Handler
+        assert decorated is handler
         assert set(registry.message_types) == {_Message}
 
+    @pytest.mark.parametrize("handler", [_Handler, _handle])
     @pytest.mark.parametrize("fail_silently", [True, False])
     def test_call_with_fail_silently_subscribes_handler_with_fail_silently(
         self,
+        handler: Any,
         fail_silently: bool,
     ) -> None:
         registry = SingleHandlerRegistry[Any, str]()
 
-        HandlerDecorator(registry)(_Handler, fail_silently=fail_silently)
+        HandlerDecorator(registry)(handler, fail_silently=fail_silently)
 
-        functions = registry.handlers_from(_Message)
-        assert [f.fail_silently for f in functions] == [fail_silently]
+        entries = registry.handlers_from(_Message)
+        assert [entry.fail_silently for entry in entries] == [fail_silently]
 
     @pytest.mark.parametrize(
-        "handler_type",
-        [_UnannotatedHandler, _ParameterlessHandler],
+        ("handler", "expected"),
+        [
+            (_Handler, "handled by _Handler"),
+            (_handle, "handled by _handle"),
+        ],
+    )
+    async def test_call_with_handler_subscribes_entry_returning_handler_result(
+        self,
+        handler: Any,
+        expected: str,
+    ) -> None:
+        registry = SingleHandlerRegistry[Any, str]()
+
+        HandlerDecorator(registry)(handler)
+
+        results = [
+            await entry(_Message()) for entry in registry.handlers_from(_Message)
+        ]
+        assert results == [expected]
+
+    @pytest.mark.parametrize(
+        "handler",
+        [
+            _UnannotatedHandler,
+            _ParameterlessHandler,
+            _unannotated_handle,
+            _parameterless_handle,
+        ],
     )
     def test_call_with_unresolvable_message_type_raises_type_error(
         self,
-        handler_type: type,
+        handler: Any,
     ) -> None:
         handler_decorator = HandlerDecorator(SingleHandlerRegistry[Any, Any]())
 
         with pytest.raises(TypeError, match="Unable to resolve message type"):
-            handler_decorator(handler_type)
+            handler_decorator(handler)
+
+    def test_call_with_message_type_and_not_handler_raises_type_error(
+        self,
+    ) -> None:
+        registry = SingleHandlerRegistry[Any, Any]()
+        decorator = HandlerDecorator(registry)(_Message)
+
+        with pytest.raises(TypeError, match="isn't a handler"):
+            decorator(_NotHandler)
+
+        assert list(registry.message_types) == []

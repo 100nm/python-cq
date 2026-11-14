@@ -8,8 +8,7 @@ from anyio.abc import TaskGroup
 from cq._core.middleware import Middleware
 from cq._core.routing.dispatchers.abc import BaseDispatcher, Dispatcher
 from cq._core.routing.handler import (
-    HandleFunction,
-    HandlerFactory,
+    HandlerEntry,
     HandlerRegistry,
     MultipleHandlerRegistry,
     SingleHandlerRegistry,
@@ -34,7 +33,7 @@ class Bus[I, O](Dispatcher[I, O], Protocol):
     def subscribe(
         self,
         message_type: type[I],
-        factory: HandlerFactory[Concatenate[I, ...], O],
+        function: Callable[Concatenate[I, ...], Awaitable[O]],
         fail_silently: bool = ...,
     ) -> Self:
         raise NotImplementedError
@@ -58,16 +57,19 @@ class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
     def subscribe(
         self,
         message_type: type[I],
-        factory: HandlerFactory[Concatenate[I, ...], O],
+        function: Callable[Concatenate[I, ...], Awaitable[O]],
         fail_silently: bool = False,
     ) -> Self:
-        self.__registry.subscribe(message_type, factory, fail_silently=fail_silently)
+        self.__registry.subscribe(
+            message_type,
+            HandlerEntry.from_function(function, fail_silently),
+        )
         return self
 
     def _handlers_from(
         self,
         message_type: type[I],
-    ) -> Iterator[HandleFunction[Concatenate[I, ...], O]]:
+    ) -> Iterator[HandlerEntry[Concatenate[I, ...], O]]:
         return self.__registry.handlers_from(message_type)
 
     def _trigger_listeners(self, message: I, /, task_group: TaskGroup) -> None:

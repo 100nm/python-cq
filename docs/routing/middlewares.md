@@ -70,19 +70,19 @@ Both styles can be mixed freely on the same bus. `Middleware` is the type alias 
 
 ### Finding the handler
 
-`resolve_handler_source(call_next)` returns the handler class behind `call_next`, so a classic middleware knows which handler is about to run, typically to log or trace it:
+`resolve_handler_source(call_next)` returns the handler behind `call_next`, so a classic middleware knows which handler is about to run, typically to log or trace it. That is the class for a class handler, and the function itself for a function handler:
 
 ```python
 from cq import resolve_handler_source
 
 
 async def logging_middleware(call_next, message):
-    handler_type = resolve_handler_source(call_next)
-    logger.info("%s handles %r", handler_type.__name__, message)
+    handler = resolve_handler_source(call_next)
+    logger.info("%s handles %r", handler.__name__, message)
     return await call_next(message)
 ```
 
-The class also gives access to metadata declared on the handler, such as a class attribute or a marker set by your own decorator.
+The handler also gives access to metadata declared on it, such as a class attribute or a marker set by your own decorator.
 
 Outside a bus, there is no handler behind `call_next`, so it returns the callable the middlewares wrap instead. On a `Pump`, that is the dispatcher given to the pump (for instance the bus). On a pipeline, it is an internal callable, so don't rely on it there.
 

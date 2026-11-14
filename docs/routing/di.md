@@ -88,7 +88,7 @@ class MyDIAdapter(DIAdapter):
     def wire[T](self, tp: type[T]) -> Callable[..., Awaitable[T]]:
         """
         Return an async factory that instantiates `tp` with its dependencies
-        injected. Called once per handler at registration, and the factory
+        injected. Called once per handler class at registration, and the factory
         is awaited on every dispatch.
         """
         ...
@@ -126,7 +126,7 @@ You can also write your own `RelatedEvents` (an outbox, an implementation that e
 If your container cannot scope a dependency to a dispatch, there is a workaround: the command scope can pass `RelatedEvents` to the handler as an extra argument of `call_next`, which is forwarded down to `handle`. Prefer a scoped dependency whenever your container supports one.
 
 !!! warning
-    This changes the signature of every command handler, not only those that publish events: each `handle` must accept the extra parameter, otherwise its dispatch raises a `TypeError`.
+    This changes the signature of every command handler, not only those that publish events: each `handle` method and each function handler must accept the extra parameter, otherwise its dispatch raises a `TypeError`.
 
 ```python
 from cq import AnyIORelatedEvents, EventBus
@@ -142,7 +142,7 @@ class CommandScopeMiddleware:
             return await call_next(command, events)
 ```
 
-Command handlers then receive the events as the second parameter of `handle`, instead of as a constructor dependency:
+Command handlers then receive the events as their second parameter (of `handle` for a class), instead of as a constructor dependency:
 
 ```python
 from cq import RelatedEvents, command_handler
@@ -163,6 +163,6 @@ The middlewares you add to the bus are not affected: they sit outside the comman
 
 ## Without an adapter
 
-`Router()` without argument uses a minimal adapter: handlers are instantiated with no arguments, there is no command scope, and anything that needs to resolve a bus lazily (such as a pipeline) raises a `RuntimeError` as soon as it is created. This is also what the default router uses when the `[injection]` extra is not installed.
+`Router()` without argument uses a minimal adapter: handler classes are instantiated with no arguments, there is no command scope, and anything that needs to resolve a bus lazily (such as a pipeline) raises a `RuntimeError` as soon as it is created. This is also what the default router uses when the `[injection]` extra is not installed.
 
 The reference implementation for python-injection lives in `cq.ext.injection.InjectionAdapter`. It is a good starting point to model your own adapter on a working example.

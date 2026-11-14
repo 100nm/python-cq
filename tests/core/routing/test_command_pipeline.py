@@ -25,19 +25,16 @@ class TestContextCommandPipeline:
         router: Router,
     ) -> None:
         @router.command_handler
-        class CreateHandler:
-            async def handle(self, command: _CreateCommand) -> _Created:
-                return _Created()
+        async def create(command: _CreateCommand) -> _Created:
+            return _Created()
 
         @router.query_handler
-        class FindHandler:
-            async def handle(self, query: _FindQuery) -> _Found:
-                return _Found()
+        async def find(query: _FindQuery) -> _Found:
+            return _Found()
 
         @router.command_handler
-        class PublishHandler:
-            async def handle(self, command: _PublishCommand) -> _Published:
-                return _Published()
+        async def publish(command: _PublishCommand) -> _Published:
+            return _Published()
 
         class Context:
             created: _Created
@@ -67,13 +64,11 @@ class TestContextCommandPipeline:
         queries = []
 
         @router.command_handler
-        class CreateHandler:
-            async def handle(self, command: _CreateCommand) -> None: ...
+        async def create(command: _CreateCommand) -> None: ...
 
         @router.query_handler
-        class FindHandler:
-            async def handle(self, query: _FindQuery) -> None:
-                queries.append(query)
+        async def find(query: _FindQuery) -> None:
+            queries.append(query)
 
         query = _FindQuery()
 

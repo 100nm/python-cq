@@ -21,8 +21,7 @@ class TestRouter:
         router = Router()
 
         @router.command_handler
-        class Handler:
-            async def handle(self, command: _Message) -> None: ...
+        async def handler(command: _Message) -> None: ...
 
         assert set(router.command_types) == {_Message}
 
@@ -30,8 +29,7 @@ class TestRouter:
         router = Router()
 
         @router.event_handler
-        class Handler:
-            async def handle(self, event: _Message) -> None: ...
+        async def handler(event: _Message) -> None: ...
 
         assert set(router.event_types) == {_Message}
 
@@ -39,8 +37,7 @@ class TestRouter:
         router = Router()
 
         @router.query_handler
-        class Handler:
-            async def handle(self, query: _Message) -> None: ...
+        async def handler(query: _Message) -> None: ...
 
         assert set(router.query_types) == {_Message}
 
@@ -59,9 +56,8 @@ class TestRouter:
         router = Router()
 
         @router.command_handler
-        class Handler:
-            async def handle(self, command: _Message) -> str:
-                return "command handled"
+        async def handler(command: _Message) -> str:
+            return "command handled"
 
         bus = router.new_command_bus()
 
@@ -71,22 +67,20 @@ class TestRouter:
         self,
     ) -> None:
         router = Router()
-        handled: list[Any] = []
+        handled = []
 
         @router.event_handler
-        class FirstHandler:
-            async def handle(self, event: _Message) -> None:
-                handled.append(type(self))
+        async def first(event: _Message) -> None:
+            handled.append("first")
 
         @router.event_handler
-        class SecondHandler:
-            async def handle(self, event: _Message) -> None:
-                handled.append(type(self))
+        async def second(event: _Message) -> None:
+            handled.append("second")
 
         bus = router.new_event_bus()
         await bus.dispatch(_Message())
 
-        assert set(handled) == {FirstHandler, SecondHandler}
+        assert sorted(handled) == ["first", "second"]
 
     async def test_new_query_bus_with_success_returns_bus_dispatching_to_query_handler(
         self,
@@ -94,9 +88,8 @@ class TestRouter:
         router = Router()
 
         @router.query_handler
-        class Handler:
-            async def handle(self, query: _Message) -> str:
-                return "query handled"
+        async def handler(query: _Message) -> str:
+            return "query handled"
 
         bus = router.new_query_bus()
 

@@ -1,5 +1,5 @@
 from contextlib import nullcontext
-from typing import Any, Self
+from typing import Any
 
 import pytest
 
@@ -8,31 +8,16 @@ from cq._core.routing.dispatchers.bus import SimpleBus
 from cq.middlewares.contextlib import ContextManagerMiddleware
 
 
-class _LengthHandler:
-    async def handle(self, message: str) -> int:
-        return len(message)
-
-    @classmethod
-    async def factory(cls) -> Self:
-        return cls()
+async def _length(message: str) -> int:
+    return len(message)
 
 
-class _StarsHandler:
-    async def handle(self, message: int) -> str:
-        return "*" * message
-
-    @classmethod
-    async def factory(cls) -> Self:
-        return cls()
+async def _stars(message: int) -> str:
+    return "*" * message
 
 
-class _ReverseHandler:
-    async def handle(self, message: str) -> str:
-        return message[::-1]
-
-    @classmethod
-    async def factory(cls) -> Self:
-        return cls()
+async def _reverse(message: str) -> str:
+    return message[::-1]
 
 
 def _double(length: int) -> int:
@@ -41,11 +26,7 @@ def _double(length: int) -> int:
 
 @pytest.fixture
 def bus() -> SimpleBus[Any, Any]:
-    return (
-        SimpleBus[Any, Any]()
-        .subscribe(str, _LengthHandler.factory)
-        .subscribe(int, _StarsHandler.factory)
-    )
+    return SimpleBus[Any, Any]().subscribe(str, _length).subscribe(int, _stars)
 
 
 class TestPipe:
@@ -82,7 +63,7 @@ class TestPipe:
         self,
         bus: SimpleBus[Any, Any],
     ) -> None:
-        other_bus = SimpleBus[str, str]().subscribe(str, _ReverseHandler.factory)
+        other_bus = SimpleBus[str, str]().subscribe(str, _reverse)
         pipe = Pipe[str, str](bus)
 
         @pipe.step
@@ -197,15 +178,10 @@ class TestContextPipeline:
     ) -> None:
         dispatched = []
 
-        class Handler:
-            async def handle(self, message: int) -> None:
-                dispatched.append(message)
+        async def handler(message: int) -> None:
+            dispatched.append(message)
 
-            @classmethod
-            async def factory(cls) -> Self:
-                return cls()
-
-        other_bus = SimpleBus[int, None]().subscribe(int, Handler.factory)
+        other_bus = SimpleBus[int, None]().subscribe(int, handler)
 
         class Context:
             pipeline = ContextPipeline[str](bus).add_static_step(2, other_bus)

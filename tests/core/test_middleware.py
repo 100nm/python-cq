@@ -296,7 +296,7 @@ async def test_through_middlewares_with_several_middlewares_returns_decorator_ru
     ]
 
 
-async def test_resolve_handler_source_with_success_returns_handler_type() -> None:
+async def test_resolve_handler_source_with_class_handler_returns_class() -> None:
     registry = SingleHandlerRegistry[str, None]()
 
     @HandlerDecorator(registry)
@@ -320,6 +320,28 @@ async def test_resolve_handler_source_with_success_returns_handler_type() -> Non
     await bus.dispatch("hello")
 
     assert sources == [Handler]
+
+
+async def test_resolve_handler_source_with_function_handler_returns_function() -> None:
+    registry = SingleHandlerRegistry[str, None]()
+
+    @HandlerDecorator(registry)
+    async def handler(message: str) -> None: ...
+
+    sources = []
+
+    async def resolving_middleware(
+        call_next: Callable[[str], Awaitable[None]],
+        message: str,
+    ) -> None:
+        sources.append(resolve_handler_source(call_next))
+        await call_next(message)
+
+    bus = SimpleBus(registry)
+    bus.add_middlewares(resolving_middleware)
+    await bus.dispatch("hello")
+
+    assert sources == [handler]
 
 
 async def test_resolve_handler_source_without_handler_returns_wrapped_callable() -> (
