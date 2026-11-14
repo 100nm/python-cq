@@ -1,3 +1,4 @@
+import sys
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Iterator
 from typing import Any, Concatenate, Protocol, Self, runtime_checkable
@@ -14,6 +15,11 @@ from cq._core.routing.handler import (
     SingleHandlerRegistry,
 )
 
+if sys.version_info >= (3, 13):  # pragma: no cover
+    from warnings import deprecated
+else:  # pragma: no cover
+    from typing_extensions import deprecated
+
 type Listener[T] = Callable[[T], Awaitable[Any]]
 
 
@@ -29,6 +35,11 @@ class Bus[I, O](Dispatcher[I, O], Protocol):
     def add_middlewares(self, *middlewares: Middleware[Concatenate[I, ...], O]) -> Self:
         raise NotImplementedError
 
+    @deprecated(
+        "`Bus.subscribe` is intended for tests, register handlers with the router "
+        "decorators (`command_handler`, `event_handler`, `query_handler`) instead.",
+        category=None,
+    )
     @abstractmethod
     def subscribe(
         self,

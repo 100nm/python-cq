@@ -1073,6 +1073,7 @@ default-groups = ["dev", "docs", "test"]
 dependencies = [
     { name = "anyio" },
     { name = "type-analyzer" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 
 [package.optional-dependencies]
@@ -1101,6 +1102,7 @@ requires-dist = [
     { name = "anyio" },
     { name = "python-injection", extras = ["async"], marker = "extra == 'injection'" },
     { name = "type-analyzer" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 provides-extras = ["injection"]
 
