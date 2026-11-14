@@ -27,9 +27,33 @@ license-files = ["LICENSE"]
 readme = "docs/index.md"
 requires-python = ">=3.12, <3.16"
 authors = [{ name = "remimd" }]
-keywords = ["cqrs"]
+keywords = [
+    "cqrs",
+    "command",
+    "query",
+    "event",
+    "command-bus",
+    "query-bus",
+    "event-bus",
+    "message-bus",
+    "mediator",
+    "handler",
+    "middleware",
+    "pipeline",
+    "ddd",
+    "domain-driven-design",
+    "event-driven",
+    "clean-architecture",
+    "hexagonal-architecture",
+    "dependency-injection",
+    "async",
+    "asyncio",
+    "anyio",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
+    "Framework :: AnyIO",
+    "Framework :: AsyncIO",
     "Topic :: Software Development :: Libraries",
     "Topic :: Software Development :: Libraries :: Application Frameworks",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -58,6 +82,7 @@ injection = [
 
 [project.urls]
 Documentation = "https://python-cq.remimd.dev"
+Issues = "https://github.com/100nm/python-cq/issues"
 Repository = "https://github.com/100nm/python-cq"
 
 [tool.coverage.report]
