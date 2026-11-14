@@ -48,6 +48,7 @@ classifiers = [
 dependencies = [
     "anyio",
     "type-analyzer",
+    "typing-extensions; python_version < '3.13'",
 ]
 
 [project.optional-dependencies]
