@@ -5,38 +5,9 @@
 
 **python-cq** does not depend on a specific dependency injection container. It talks to DI through the `DIAdapter` protocol: implement it once and the library works with the container you already use.
 
-## The `Router` class
+## Using your adapter
 
-`Router` ties the handler registries to a DI adapter. The decorators (`command_handler`, `event_handler`, `query_handler`) and bus factories (`new_command_bus`, `new_event_bus`, `new_query_bus`) exported by `cq.default` are bound to a default `Router`, which uses python-injection when the extra is installed. This router is only built, and its buses only registered in the container, when `cq.default` is imported: importing `cq` alone registers nothing.
-
-To use your own adapter, create a `Router` with it and use its methods in place of the ones from `cq.default`, which you then never import:
-
-```python
-from cq import Router
-
-router = Router(MyDIAdapter()).register_defaults()
-
-command_handler = router.command_handler
-event_handler = router.event_handler
-query_handler = router.query_handler
-
-new_command_bus = router.new_command_bus
-new_event_bus = router.new_event_bus
-new_query_bus = router.new_query_bus
-```
-
-`register_defaults()` hands the bus factories to the adapter so that `CommandBus`, `EventBus`, and `QueryBus` can be resolved from the container. Call it once per router.
-
-A router also lists the message types its handlers are registered for, through `command_types`, `event_types`, and `query_types`.
-
-Pipelines follow the same rule. Build them from your router so they resolve the buses through your adapter:
-
-```python
-class PaymentContext:
-    pipeline: ClassVar[ContextCommandPipeline[ValidateCartCommand]] = (
-        router.command_pipeline()
-    )
-```
+An adapter is used by passing it to a `Router`, whose decorators and bus factories then replace the ones of `cq.default`. See [Creating your own router](router.md#creating-your-own-router).
 
 ## Implementing a `DIAdapter`
 
@@ -96,6 +67,8 @@ class MyDIAdapter(DIAdapter):
 
 router = Router(MyDIAdapter()).register_defaults()
 ```
+
+The reference implementation for python-injection lives in `cq.ext.injection.InjectionAdapter`. It is a good starting point to model your own adapter on a working example.
 
 ### The command scope
 
@@ -161,9 +134,3 @@ class CreateUserHandler(NamedTuple):
 ```
 
 The middlewares you add to the bus are not affected: they sit outside the command scope (see [Execution order](middlewares.md#execution-order)) and only receive the command.
-
-## Without an adapter
-
-`Router()` without argument uses a minimal adapter: handler classes are instantiated with no arguments, there is no command scope, and anything that needs to resolve a bus lazily (such as a pipeline) raises a `RuntimeError` as soon as it is created. This is also what the default router uses when the `[injection]` extra is not installed.
-
-The reference implementation for python-injection lives in `cq.ext.injection.InjectionAdapter`. It is a good starting point to model your own adapter on a working example.

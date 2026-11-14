@@ -36,7 +36,7 @@ The decorator reads the annotation of the first parameter (of `handle` for a cla
 For a class, a new handler instance is built for every dispatch, through the configured DI adapter, so constructor dependencies are injected each time the handler runs.
 
 !!! warning "Registration happens at import time"
-    `cq` exports the types and building blocks, while `cq.default` exports the ready-to-use decorators and bus factories, bound to a default router. That router, and the buses it registers in the DI container, only exist once `cq.default` has been imported.
+    `cq` exports the types and building blocks, while `cq.default` exports the ready-to-use decorators and bus factories, bound to a default [router](router.md). That router, and the buses it registers in the DI container, only exist once `cq.default` has been imported.
 
     The same goes for handlers: a handler is registered when the module that defines it is imported. In an application split into several modules, make sure every module containing handlers is imported at startup, before the first dispatch. Otherwise, `dispatch` does not raise: it returns the `NotImplemented` sentinel (see [When no handler is registered](dispatching.md#when-no-handler-is-registered)).
 

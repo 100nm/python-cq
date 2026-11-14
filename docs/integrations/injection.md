@@ -63,7 +63,7 @@ async def related_events_factory(
 
 ## Custom module
 
-To register everything in another python-injection module than the default one, build a `Router` with your own `InjectionAdapter`, as described in [Custom DI adapter](../routing/di.md#the-router-class):
+To register everything in another python-injection module than the default one, build a `Router` with your own `InjectionAdapter`, as described in [Creating your own router](../routing/router.md#creating-your-own-router):
 
 ```python
 from cq import Router
