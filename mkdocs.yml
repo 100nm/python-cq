@@ -19,6 +19,7 @@ nav:
   - Home: index.md
   - Routing:
       - Messages and handlers: routing/messages.md
+      - The router: routing/router.md
       - Dispatching messages: routing/dispatching.md
       - Configuring a bus: routing/configuring.md
       - Middlewares: routing/middlewares.md
