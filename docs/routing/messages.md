@@ -20,10 +20,10 @@ There is no base class to inherit from. `Command`, `Query`, and `Event` exported
 
 ## Handlers
 
-A handler is either a class with an async `handle` method, or an async function. In both cases, the message is the first parameter. It is registered with one of the three decorators: `@command_handler`, `@query_handler`, or `@event_handler`.
+A handler is either a class with an async `handle` method, or an async function. In both cases, the message is the first parameter. It is registered with one of the three decorators: `@command_handler`, `@query_handler`, or `@event_handler`, exported by `cq.default`.
 
 ```python
-from cq import command_handler
+from cq.default import command_handler
 
 
 @command_handler
@@ -35,12 +35,17 @@ The decorator reads the annotation of the first parameter (of `handle` for a cla
 
 For a class, a new handler instance is built for every dispatch, through the configured DI adapter, so constructor dependencies are injected each time the handler runs.
 
+!!! warning "Registration happens at import time"
+    `cq` exports the types and building blocks, while `cq.default` exports the ready-to-use decorators and bus factories, bound to a default router. That router, and the buses it registers in the DI container, only exist once `cq.default` has been imported.
+
+    The same goes for handlers: a handler is registered when the module that defines it is imported. In an application split into several modules, make sure every module containing handlers is imported at startup, before the first dispatch. Otherwise, `dispatch` does not raise: it returns the `NotImplemented` sentinel (see [When no handler is registered](dispatching.md#when-no-handler-is-registered)).
+
 ### Function handlers
 
 A handler that needs no dependency can be written as a plain async function:
 
 ```python
-from cq import command_handler
+from cq.default import command_handler
 
 
 @command_handler
@@ -58,7 +63,7 @@ A command or a query accepts a single handler: registering a second one for the 
 Defining a handler as a `NamedTuple` (or a frozen `dataclass`) gives a concise, immutable declaration of its dependencies:
 
 ```python
-from cq import command_handler
+from cq.default import command_handler
 from typing import NamedTuple
 
 
@@ -90,7 +95,7 @@ The decorator only accepts a handler class or a function. Applying `@command_han
 A handler registered for a base class also receives every subclass of that type. This lets you write a single handler for a family of related messages:
 
 ```python
-from cq import event_handler
+from cq.default import event_handler
 from dataclasses import dataclass
 
 
@@ -118,7 +123,7 @@ When several handlers match through the MRO, a command or a query goes to the mo
 Command handlers change the state of the system and may return a value, typically an identifier or a small result object.
 
 ```python
-from cq import command_handler
+from cq.default import command_handler
 from dataclasses import dataclass
 from typing import NamedTuple
 
@@ -143,7 +148,8 @@ class CreateUserHandler(NamedTuple):
 A command handler can inject `RelatedEvents` to publish events as part of the command's execution:
 
 ```python
-from cq import RelatedEvents, command_handler
+from cq import RelatedEvents
+from cq.default import command_handler
 
 
 @command_handler
@@ -170,7 +176,7 @@ If an event handler raises, the command handler is cancelled if it is still runn
 Query handlers read state and must not produce side effects.
 
 ```python
-from cq import query_handler
+from cq.default import query_handler
 from dataclasses import dataclass
 from typing import NamedTuple
 
@@ -193,7 +199,7 @@ class GetUserByIdHandler(NamedTuple):
 Event handlers react to something that has already happened. An event can have zero, one, or many handlers, which makes events the right tool for loose coupling between components.
 
 ```python
-from cq import event_handler
+from cq.default import event_handler
 from dataclasses import dataclass
 from typing import NamedTuple
 
