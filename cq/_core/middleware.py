@@ -4,7 +4,7 @@ from functools import wraps
 from inspect import isasyncgenfunction
 from typing import Any, Concatenate, Self, TypeGuard
 
-from cq._core.routing.handler import HandleFunction, HandlerType
+from cq._core.routing.handler import HandlerEntry, HandlerType
 from cq.exceptions import MiddlewareError
 
 type MiddlewareResult[T] = AsyncGenerator[None, T]
@@ -86,15 +86,13 @@ class _BoundMiddleware[**P, T]:
 
 
 def resolve_handler_source[**P, T](
-    call_next: Callable[P, Awaitable[T]]
-    | _BoundMiddleware[P, T]
-    | HandleFunction[P, T],
+    call_next: Callable[P, Awaitable[T]] | _BoundMiddleware[P, T] | HandlerEntry[P, T],
     /,
 ) -> HandlerType[P, T] | Any:
     while isinstance(call_next, _BoundMiddleware):
         call_next = call_next.call_next
 
-    if isinstance(call_next, HandleFunction):
+    if isinstance(call_next, HandlerEntry):
         return call_next.source
 
     return call_next

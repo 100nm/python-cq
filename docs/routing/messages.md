@@ -16,11 +16,11 @@ class CreateUserCommand:
     email: str
 ```
 
-There is no base class to inherit from. `Command`, `Query`, and `Event` exported by `cq` are aliases of `object`, used only to make type hints read better. A handler is matched to a message by the type annotation of its `handle` method, not by a marker class.
+There is no base class to inherit from. `Command`, `Query`, and `Event` exported by `cq` are aliases of `object`, used only to make type hints read better. A handler is matched to a message by the type annotation of its first parameter, not by a marker class.
 
 ## Handlers
 
-A handler is a class with an async `handle` method that takes the message as its first parameter. It is registered with one of the three decorators: `@command_handler`, `@query_handler`, or `@event_handler`.
+A handler is either a class with an async `handle` method, or an async function. In both cases, the message is the first parameter. It is registered with one of the three decorators: `@command_handler`, `@query_handler`, or `@event_handler`.
 
 ```python
 from cq import command_handler
@@ -31,9 +31,25 @@ class CreateUserHandler:
     async def handle(self, command: CreateUserCommand) -> int: ...
 ```
 
-The decorator reads the annotation of the first parameter of `handle` to know which message type the handler subscribes to. A missing annotation raises a `TypeError` at import time.
+The decorator reads the annotation of the first parameter (of `handle` for a class) to know which message type the handler subscribes to. A missing annotation raises a `TypeError` at import time.
 
-A new handler instance is built for every dispatch, through the configured DI adapter, so constructor dependencies are injected each time the handler runs.
+For a class, a new handler instance is built for every dispatch, through the configured DI adapter, so constructor dependencies are injected each time the handler runs.
+
+### Function handlers
+
+A handler that needs no dependency can be written as a plain async function:
+
+```python
+from cq import command_handler
+
+
+@command_handler
+async def create_user(command: CreateUserCommand) -> int: ...
+```
+
+The function is called directly on every dispatch: it receives the message and nothing goes through the DI adapter. As soon as the handler needs a dependency, write it as a class.
+
+The function must be `async`. A sync function is accepted by the decorator, but its dispatch then raises a `TypeError`, because its result cannot be awaited.
 
 A command or a query accepts a single handler: registering a second one for the same message type raises a `RuntimeError` as soon as the module is imported. An event accepts any number of handlers.
 
@@ -59,13 +75,15 @@ class CreateUserHandler(NamedTuple):
 
 ### Explicit message type
 
-The message type can be passed to the decorator instead of being read from the annotation. It takes precedence over the annotation:
+The message type can be passed to the decorator instead of being read from the annotation. It takes precedence over the annotation, for a class as for a function:
 
 ```python
 @command_handler(CreateUserCommand)
 class CreateUserHandler:
     async def handle(self, command) -> int: ...
 ```
+
+The decorator only accepts a handler class or a function. Applying `@command_handler(CreateUserCommand)` to anything else raises a `TypeError`.
 
 ### Polymorphic dispatch
 
