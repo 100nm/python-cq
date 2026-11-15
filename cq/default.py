@@ -15,7 +15,7 @@ __all__ = (
 
 def __detect_di_adapter() -> DIAdapter | None:
     with suppress(ImportError):
-        from .ext.injection import InjectionAdapter
+        from cq.ext.injection import InjectionAdapter
 
         return InjectionAdapter()
 
