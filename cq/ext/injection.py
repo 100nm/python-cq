@@ -7,10 +7,17 @@ from typing import Any, Concatenate
 from injection import Module, adefine_scope, mod
 from injection.exceptions import ScopeAlreadyDefinedError
 
-from cq._core.message import Command, CommandBus, EventBus, QueryBus
-from cq._core.middleware import Middleware, MiddlewareResult
-from cq._core.related_events import AnyIORelatedEvents, RelatedEvents
-from cq._core.routing.di import DIAdapter
+from cq import (
+    AnyIORelatedEvents,
+    Command,
+    CommandBus,
+    DIAdapter,
+    EventBus,
+    Middleware,
+    MiddlewareResult,
+    QueryBus,
+    RelatedEvents,
+)
 
 __all__ = ("CQScope", "InjectionAdapter", "InjectionScopeMiddleware")
 
