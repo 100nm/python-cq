@@ -1148,14 +1148,14 @@ wheels = [
 
 [[package]]
 name = "python-injection"
-version = "0.27.0"
+version = "0.27.0.post0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "type-analyzer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c8/40/cb38c495bb4133abef90d5b55d064cbb9f3bcc681b0d81ad600c1432feef/python_injection-0.27.0.tar.gz", hash = "sha256:ef3cd8ce37a4028913cdcfd9e154cbc52449d38a6c2d635e98094aad4aad0e76", size = 24972, upload-time = "2026-10-31T10:16:45.908Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1a/25/453919ff9672d71399bcd45af99c7c829ba1b6f6c013b78aab51d4838cf3/python_injection-0.27.0.post0.tar.gz", hash = "sha256:823cca34e91bee767b43e9f59029724f59542d0cc73dfd2c463d9bdcf1a9651a", size = 25141, upload-time = "2026-11-14T20:11:38.797Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7b/92/7689ea969e74add4dadce3b231bf8b39749e365b278d7c8b65e68248cd7a/python_injection-0.27.0-py3-none-any.whl", hash = "sha256:d279863feaf7bd9ddf612befe0bf7be85a291186f21a0888c478402f61b4ff30", size = 31801, upload-time = "2026-10-31T10:16:44.757Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/8c/c7db200b0623500852fd49096a3a156a73f9299be82889425d29325ce880/python_injection-0.27.0.post0-py3-none-any.whl", hash = "sha256:8a4c79762a16da43faf99b16f28f4339e15efe0dc2aea1a06a626a212a512129", size = 31957, upload-time = "2026-11-14T20:11:37.769Z" },
 ]
 
 [package.optional-dependencies]
@@ -1379,11 +1379,11 @@ wheels = [
 
 [[package]]
 name = "type-analyzer"
-version = "0.2.0"
+version = "0.2.0.post0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/83/66/2c019b4a3ec0b9ba1703a2156227ab052c262232d78c99f078a3c3177959/type_analyzer-0.2.0.tar.gz", hash = "sha256:d6bed633d7de62e7627619f0f6dc057fda5404a95d2ee2c1ffb6ef5295958f46", size = 6901, upload-time = "2026-10-25T17:05:34.362Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/fa/09cc8f4682c35d02af104bc799ba9a0730ee6c8f3cd3dc90877b76edab0b/type_analyzer-0.2.0.post0.tar.gz", hash = "sha256:03881babdd2658f7652401b9d4ab9eff0ef43229c60ff84d9a8fa5a1a6116f18", size = 6902, upload-time = "2026-11-14T20:20:01.873Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/79/19/76badd92b1688b1afa0c6178fb397f42723a1c83f01d3b473fb6d816f685/type_analyzer-0.2.0-py3-none-any.whl", hash = "sha256:654d373d1542c12389d43f5e0ce830bebcf8c041070c5c124b70f3851c130ebf", size = 4845, upload-time = "2026-10-25T17:05:33.316Z" },
+    { url = "https://files.pythonhosted.org/packages/76/fa/dfd4bec5a9c2fb9f74aec7ae196cc31ed9c678923363647cbc8be44db1a3/type_analyzer-0.2.0.post0-py3-none-any.whl", hash = "sha256:5c2654b6d29ee3d4389e46e2166ada97c4420d50e3c9d59cde4d959daef1b184", size = 4898, upload-time = "2026-11-14T20:20:00.772Z" },
 ]
 
 [[package]]
