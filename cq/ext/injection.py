@@ -6,6 +6,7 @@ from typing import Any, Concatenate
 
 from injection import Module, adefine_scope, mod
 from injection.exceptions import ScopeAlreadyDefinedError
+from typing_extensions import TypeForm
 
 from cq import (
     AnyIORelatedEvents,
@@ -37,8 +38,8 @@ class InjectionAdapter(DIAdapter):
             threadsafe=self.threadsafe,
         )
 
-    def lazy[T](self, tp: type[T], /) -> Callable[[], Awaitable[T]]:
-        awaitable = self.module.aget_lazy_instance(tp, threadsafe=self.threadsafe)
+    def lazy[T](self, type_: TypeForm[T], /) -> Callable[[], Awaitable[T]]:
+        awaitable = self.module.aget_lazy_instance(type_, threadsafe=self.threadsafe)
         return lambda: awaitable
 
     def register_defaults(
@@ -47,7 +48,7 @@ class InjectionAdapter(DIAdapter):
         event_bus: Callable[..., EventBus],
         query_bus: Callable[..., QueryBus[Any]],
     ) -> None:
-        self.module.injectable(
+        self.module.injectable(  # type: ignore[call-overload]
             command_bus,
             ignore_type_hint=True,
             inject=False,
@@ -61,7 +62,7 @@ class InjectionAdapter(DIAdapter):
             on=EventBus,
             mode="fallback",
         )
-        self.module.injectable(
+        self.module.injectable(  # type: ignore[call-overload]
             query_bus,
             ignore_type_hint=True,
             inject=False,
@@ -73,8 +74,8 @@ class InjectionAdapter(DIAdapter):
             mode="fallback",
         )(self.__new_related_events)
 
-    def wire[T](self, tp: type[T], /) -> Callable[..., Awaitable[T]]:
-        return self.module.make_async_factory(tp, self.threadsafe)
+    def wire[T](self, type_: type[T], /) -> Callable[..., Awaitable[T]]:
+        return self.module.make_async_factory(type_, self.threadsafe)
 
     @staticmethod
     async def __new_related_events(event_bus: EventBus) -> AsyncIterator[RelatedEvents]:

@@ -29,8 +29,8 @@ class ContextCommandPipeline[C: Command](ContextPipeline[C]):
                 "or build the pipeline with `router.command_pipeline()`."
             ) from exc
 
-        super().__init__(LazyDispatcher(CommandBus, di))
-        self.__query_dispatcher = LazyDispatcher(QueryBus, di)
+        super().__init__(LazyDispatcher(CommandBus, di))  # type: ignore[arg-type]
+        self.__query_dispatcher = LazyDispatcher(QueryBus, di)  # type: ignore[arg-type]
 
     def add_static_query_step[Q: Query](self, query: Q, /) -> Self:
         return self.add_static_step(query, dispatcher=self.__query_dispatcher)

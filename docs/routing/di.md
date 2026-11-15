@@ -18,6 +18,8 @@ from collections.abc import Awaitable, Callable
 from cq import Command, CommandBus, DIAdapter, EventBus, Middleware, QueryBus, Router
 from typing import Any, Concatenate
 
+from typing_extensions import TypeForm
+
 
 class MyDIAdapter(DIAdapter):
     def command_scope(self) -> Middleware[Concatenate[Command, ...], Any] | None:
@@ -33,9 +35,9 @@ class MyDIAdapter(DIAdapter):
         """
         ...
 
-    def lazy[T](self, tp: type[T]) -> Callable[[], Awaitable[T]]:
+    def lazy[T](self, type_: TypeForm[T]) -> Callable[[], Awaitable[T]]:
         """
-        Return a callable that, when called and awaited, resolves `tp` from
+        Return a callable that, when called and awaited, resolves `type_` from
         the container. Pipelines call the returned callable on every
         message they dispatch, so that buses registered later in the import
         graph are picked up.
@@ -56,9 +58,9 @@ class MyDIAdapter(DIAdapter):
         """
         ...
 
-    def wire[T](self, tp: type[T]) -> Callable[..., Awaitable[T]]:
+    def wire[T](self, type_: type[T]) -> Callable[..., Awaitable[T]]:
         """
-        Return an async factory that instantiates `tp` with its dependencies
+        Return an async factory that instantiates `type_` with its dependencies
         injected. Called once per handler class at registration, and the factory
         is awaited on every dispatch.
         """

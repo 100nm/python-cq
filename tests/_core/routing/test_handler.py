@@ -130,7 +130,7 @@ class TestMultipleHandlerRegistry:
     def test_message_types_with_success_returns_subscribed_types(self) -> None:
         registry = MultipleHandlerRegistry[Any, str]()
         registry.subscribe(
-            _Message | _OtherMessage,  # type: ignore[arg-type]
+            _Message | _OtherMessage,
             HandlerEntry.from_function(_handle),
         )
 
@@ -162,7 +162,7 @@ class TestSingleHandlerRegistry:
         entry = HandlerEntry.from_function(_other_handle)
 
         with pytest.raises(RuntimeError):
-            registry.subscribe(_OtherMessage | _Message, entry)  # type: ignore[arg-type]
+            registry.subscribe(_OtherMessage | _Message, entry)
 
         assert set(registry.message_types) == {_Message}
 
@@ -183,7 +183,7 @@ class TestSingleHandlerRegistry:
     def test_message_types_with_success_returns_subscribed_types(self) -> None:
         registry = SingleHandlerRegistry[Any, str]()
         registry.subscribe(
-            _Message | _OtherMessage,  # type: ignore[arg-type]
+            _Message | _OtherMessage,
             HandlerEntry.from_function(_handle),
         )
 
