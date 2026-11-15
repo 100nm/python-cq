@@ -1,8 +1,6 @@
 from contextlib import suppress
 
-from ._core.routing.command_pipeline import ContextCommandPipeline
-from ._core.routing.di import DIAdapter
-from ._core.routing.router import Router
+from cq import ContextCommandPipeline, DIAdapter, Router
 
 __all__ = (
     "command_handler",
