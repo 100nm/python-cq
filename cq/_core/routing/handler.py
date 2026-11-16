@@ -16,6 +16,7 @@ from typing import (
 )
 
 from type_analyzer import MatchingTypesConfig, iter_matching_types, matching_types
+from typing_extensions import TypeForm
 
 from cq._core.common.typing import Decorator
 from cq._core.routing.di import DIAdapter, NoDI
@@ -92,7 +93,7 @@ class HandlerRegistry[I, O](Protocol):
     @abstractmethod
     def subscribe(
         self,
-        message_type: type[I],
+        message_type: TypeForm[I],
         entry: HandlerEntry[Concatenate[I, ...], O],
     ) -> Self:
         raise NotImplementedError
@@ -118,7 +119,7 @@ class MultipleHandlerRegistry[I, O](HandlerRegistry[I, O]):
 
     def subscribe(
         self,
-        message_type: type[I],
+        message_type: TypeForm[I],
         entry: HandlerEntry[Concatenate[I, ...], O],
     ) -> Self:
         for key_type in _build_key_types(message_type):
@@ -149,7 +150,7 @@ class SingleHandlerRegistry[I, O](HandlerRegistry[I, O]):
 
     def subscribe(
         self,
-        message_type: type[I],
+        message_type: TypeForm[I],
         entry: HandlerEntry[Concatenate[I, ...], O],
     ) -> Self:
         entries = {key_type: entry for key_type in _build_key_types(message_type)}
@@ -172,9 +173,18 @@ class HandlerDecorator[I, O]:
     if TYPE_CHECKING:  # pragma: no cover
 
         @overload
+        def __call__[T: HandlerType[..., Any]](  # type: ignore[overload-overlap]
+            self,
+            handler: T,
+            /,
+            *,
+            fail_silently: bool = ...,
+        ) -> T: ...
+
+        @overload
         def __call__(
             self,
-            message_type: type[I],
+            message_type: TypeForm[I],
             /,
             *,
             fail_silently: bool = ...,
@@ -200,7 +210,10 @@ class HandlerDecorator[I, O]:
 
     def __call__[T](
         self,
-        message_or_handler: type[I] | T | None = None,
+        message_or_handler: HandlerType[Concatenate[I, ...], O]
+        | TypeForm[I]
+        | T
+        | None = None,
         /,
         *,
         fail_silently: bool = False,
@@ -219,7 +232,7 @@ class HandlerDecorator[I, O]:
         wrapped: T,
         /,
         *,
-        message_type: type[I] | None,
+        message_type: TypeForm[I] | None,
         fail_silently: bool,
     ) -> T:
         if not self.__try_subscribe(wrapped, message_type, fail_silently):
@@ -230,7 +243,7 @@ class HandlerDecorator[I, O]:
     def __try_subscribe(
         self,
         handler: Any,
-        message_type: type[I] | None,
+        message_type: TypeForm[I] | None,
         fail_silently: bool,
     ) -> bool:
         if isfunction(handler):
@@ -266,7 +279,7 @@ def _iter_key_types(message_type: Any) -> Iterator[Any]:
 
 def _resolve_message_type[I, O](
     handler: Callable[Concatenate[I, ...], Awaitable[O]],
-) -> type[I]:
+) -> TypeForm[I]:
     signature = inspect_signature(handler, eval_str=True)
 
     for parameter in signature.parameters.values():

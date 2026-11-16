@@ -22,7 +22,7 @@ class TestLazyDispatcher:
             async def handle(self, query: _Query) -> str:
                 return "query handled"
 
-        dispatcher = LazyDispatcher[_Query, Any](QueryBus, router.di)
+        dispatcher = LazyDispatcher[_Query, Any](QueryBus, router.di)  # type: ignore[arg-type]
         router.register_defaults()
 
         assert await dispatcher.dispatch(_Query()) == "query handled"

@@ -4,6 +4,8 @@ from abc import abstractmethod
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, Concatenate, Protocol, runtime_checkable
 
+from typing_extensions import TypeForm
+
 if TYPE_CHECKING:  # pragma: no cover
     from cq import Command, CommandBus, EventBus, Middleware, QueryBus
 
@@ -38,11 +40,11 @@ class DIAdapter(Protocol):
         return None
 
     @abstractmethod
-    def lazy[T](self, tp: type[T]) -> Callable[[], Awaitable[T]]:
+    def lazy[T](self, type_: TypeForm[T]) -> Callable[[], Awaitable[T]]:
         """
-        Return a callable that resolves an instance of ``tp`` in two steps.
+        Return a callable that resolves an instance of ``type_`` in two steps.
 
-        1. ``lazy(tp)`` obtains a resolver from the DI framework for ``tp``.
+        1. ``lazy(type_)`` obtains a resolver from the DI framework for ``type_``.
         2. Calling and awaiting the returned callable performs the actual
            resolution and returns the instance.
         """
@@ -69,9 +71,9 @@ class DIAdapter(Protocol):
         return
 
     @abstractmethod
-    def wire[T](self, tp: type[T]) -> Callable[..., Awaitable[T]]:
+    def wire[T](self, type_: type[T]) -> Callable[..., Awaitable[T]]:
         """
-        Return an async factory that instantiates ``tp`` with injected
+        Return an async factory that instantiates ``type_`` with injected
         dependencies.
 
         Used internally to build handler instances whose dependencies are
@@ -84,14 +86,14 @@ class DIAdapter(Protocol):
 class NoDI(DIAdapter):
     __slots__ = ()
 
-    def lazy[T](self, tp: type[T], /) -> Callable[[], Awaitable[T]]:
-        tp_str = getattr(tp, "__name__", str(tp))
+    def lazy[T](self, type_: TypeForm[T], /) -> Callable[[], Awaitable[T]]:
+        type_str = getattr(type_, "__name__", str(type_))
         raise RuntimeError(
-            f"Can't lazily resolve {tp_str}: no DI container configured."
+            f"Can't lazily resolve {type_str}: no DI container configured."
         )
 
-    def wire[T](self, tp: type[T], /) -> Callable[..., Awaitable[T]]:
+    def wire[T](self, type_: type[T], /) -> Callable[..., Awaitable[T]]:
         async def factory() -> T:
-            return tp()
+            return type_()
 
         return factory

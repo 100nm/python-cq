@@ -1,10 +1,10 @@
-import sys
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Iterator
 from typing import Any, Concatenate, Protocol, Self, runtime_checkable
 
 import anyio
 from anyio.abc import TaskGroup
+from typing_extensions import TypeForm, deprecated
 
 from cq._core.middleware import Middleware
 from cq._core.routing.dispatchers.abc import BaseDispatcher, Dispatcher
@@ -14,11 +14,6 @@ from cq._core.routing.handler import (
     MultipleHandlerRegistry,
     SingleHandlerRegistry,
 )
-
-if sys.version_info >= (3, 13):  # pragma: no cover
-    from warnings import deprecated
-else:  # pragma: no cover
-    from typing_extensions import deprecated
 
 type Listener[T] = Callable[[T], Awaitable[Any]]
 
@@ -43,7 +38,7 @@ class Bus[I, O](Dispatcher[I, O], Protocol):
     @abstractmethod
     def subscribe(
         self,
-        message_type: type[I],
+        message_type: TypeForm[I],
         function: Callable[Concatenate[I, ...], Awaitable[O]],
         fail_silently: bool = ...,
     ) -> Self:
@@ -67,7 +62,7 @@ class BaseBus[I, O](BaseDispatcher[I, O], Bus[I, O], ABC):
 
     def subscribe(
         self,
-        message_type: type[I],
+        message_type: TypeForm[I],
         function: Callable[Concatenate[I, ...], Awaitable[O]],
         fail_silently: bool = False,
     ) -> Self:

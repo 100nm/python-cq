@@ -62,7 +62,7 @@ class TestInjectionAdapter:
         router.register_defaults()
 
         for bus_type in (AnyCommandBus, EventBus, QueryBus[Any]):
-            assert isinstance(injection_module.find_instance(bus_type), Bus)
+            assert isinstance(injection_module.find_instance(bus_type), Bus)  # type: ignore[arg-type]
 
     async def test_command_scope_with_success_provides_related_events_to_command_handlers(
         self,
