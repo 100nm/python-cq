@@ -1,3 +1,5 @@
+from ._core.codecs.abc import Codec, Decoder, Encoder
+from ._core.codecs.polymorphic import Envelope, PolymorphicCodec
 from ._core.message import (
     AnyCommandBus,
     Command,
@@ -7,6 +9,7 @@ from ._core.message import (
     Query,
     QueryBus,
 )
+from ._core.message import MessageTypeMetadata as meta  # noqa: N813
 from ._core.middleware import (
     Middleware,
     MiddlewareResult,
@@ -29,20 +32,25 @@ __all__ = (
     "AnyCommandBus",
     "AnyIORelatedEvents",
     "Bus",
+    "Codec",
     "Command",
     "CommandBus",
     "Consumer",
     "ContextCommandPipeline",
     "ContextPipeline",
     "DIAdapter",
+    "Decoder",
     "Delivery",
     "Dispatcher",
+    "Encoder",
+    "Envelope",
     "Event",
     "EventBus",
     "MemoryQueue",
     "Middleware",
     "MiddlewareResult",
     "Pipe",
+    "PolymorphicCodec",
     "Producer",
     "Pump",
     "Query",
@@ -51,6 +59,7 @@ __all__ = (
     "RelatedEvents",
     "Router",
     "dispatch_sequentially",
+    "meta",
     "resolve_handler_source",
     "through_middlewares",
 )

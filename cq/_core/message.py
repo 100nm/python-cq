@@ -1,6 +1,8 @@
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, ClassVar, Self
 
 from cq._core.routing.dispatchers.abc import Dispatcher
+from cq.exceptions import MissingTypeNameError
 
 Command = object
 Event = object
@@ -11,3 +13,31 @@ type EventBus = Dispatcher[Event, None]
 type QueryBus[T] = Dispatcher[Query, T]
 
 AnyCommandBus = CommandBus[Any]
+
+
+@dataclass(frozen=True, slots=True)
+class MessageTypeMetadata:
+    type_name: str | None = field(default=None)
+
+    __field: ClassVar[str] = "__cq_metadata__"
+
+    def __call__[T: type](self, wrapped: T, /) -> T:
+        setattr(wrapped, self.__field, self)
+        return wrapped
+
+    def ensure_type_name(self) -> str:
+        type_name = self.type_name
+        if type_name is None:
+            raise MissingTypeNameError(
+                "The type has no name: decorate it with `@meta(...)`.",
+            )
+
+        return type_name
+
+    @classmethod
+    def default(cls) -> Self:
+        return cls()
+
+    @classmethod
+    def of(cls, something: Any, /) -> Self:
+        return getattr(something, cls.__field, cls.default())

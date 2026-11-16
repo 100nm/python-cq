@@ -76,9 +76,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-injection = [
-    "python-injection[async]",
-]
+injection = ["python-injection[async]"]
+pydantic = ["pydantic"]
 
 [project.urls]
 Documentation = "https://python-cq.remimd.dev"
