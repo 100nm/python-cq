@@ -16,6 +16,7 @@ test = [
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
+    "testcontainers[rabbitmq]",
 ]
 
 [project]
@@ -76,6 +77,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+aio-pika = ["aio-pika"]
 injection = ["python-injection[async]"]
 pydantic = ["pydantic"]
 
@@ -114,6 +116,7 @@ warn_unused_ignores = true
 python_files = ["test_*.py"]
 addopts = ["--tb", "short", "--cov", "./", "--cov-report", "term-missing:skip-covered"]
 asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 asyncio_mode = "auto"
 testpaths = ["**/tests/"]
 
