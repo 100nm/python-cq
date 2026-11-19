@@ -76,6 +76,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+aio-pika = ["aio-pika"]
 injection = ["python-injection[async]"]
 pydantic = ["pydantic"]
 
